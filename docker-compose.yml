@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # start postgres dev db
+  dev-db:
+    image: postgres
+    ports:
+      - '5432:5432'
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: go-rest
+    volumes:
+      - ./db-data/postgres/:/var/lib/postgresql/data/
+
+  # start a redis container
+  redis:
+    image: 'redis:latest'
+    ports:
+      - '6379:6379'
+      - '8000:8001'
+    restart: always
+    volumes:
+      - ./db-data/redis/:/data
+
+  # start mailhog
+  
