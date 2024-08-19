@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"log"
@@ -14,9 +14,10 @@ type Config struct {
 	Db_Port, Db_Password string
 }
 
-func LoadConfig() *Config {
+func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatal("Cannot load environment file: ", err)
+		return nil, err
 	}
 
 	config := &Config{
@@ -30,5 +31,5 @@ func LoadConfig() *Config {
 		Db_Password: os.Getenv("PASSWORD"),
 	}
 
-	return config
+	return config, nil
 }
