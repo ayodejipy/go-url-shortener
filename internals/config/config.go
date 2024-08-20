@@ -7,28 +7,31 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	Api_Version, Api_Title, Api_Description string
-	Redis_Port, Redis_Host, Redis_Ttl string
-	Db_Host, Db_Name, Db_User string
-	Db_Port, Db_Password string
+type AppConfig struct {
+	ApiVersion, ApiTitle, ApiDescription string
+	RedisPort, RedisHost, RedisTtl string
+	DbHost, DbName, DbUser string
+	DbPort, DbPassword string
 }
 
-func LoadConfig() (*Config, error) {
+func LoadConfig() (*AppConfig, error) {
 	if err := godotenv.Load(".env"); err != nil {
 		log.Fatal("Cannot load environment file: ", err)
 		return nil, err
 	}
 
-	config := &Config{
-		Api_Version: os.Getenv("API_VERSION"),
-		Api_Title: os.Getenv("API_TITLE"),
-		Api_Description: os.Getenv("API_DESCRIPTION"),
-		Db_Host: os.Getenv("HOST"),
-		Db_Name: os.Getenv("DB_NAME"),
-		Db_Port: os.Getenv("DB_PORT"),
-		Db_User: os.Getenv("USERNAME"),
-		Db_Password: os.Getenv("PASSWORD"),
+	config := &AppConfig{
+		ApiVersion: os.Getenv("API_VERSION"),
+		ApiTitle: os.Getenv("API_TITLE"),
+		ApiDescription: os.Getenv("API_DESCRIPTION"),
+		DbHost: os.Getenv("HOST"),
+		DbName: os.Getenv("DB_NAME"),
+		DbPort: os.Getenv("DB_PORT"),
+		DbUser: os.Getenv("USERNAME"),
+		DbPassword: os.Getenv("PASSWORD"),
+		RedisPort: os.Getenv("REDIS_PORT"),
+		RedisHost: os.Getenv("REDIS_HOST"),
+		RedisTtl: os.Getenv("REDIS_TTL"),
 	}
 
 	return config, nil

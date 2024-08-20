@@ -8,13 +8,16 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-var client *redis.Client
-var ctx = context.Background()
+var (
+	client *redis.Client
+	ctx = context.Background()
+)
 
-func Init(config *config.Config) {
-	address := fmt.Sprintf("%s:%v", config.Redis_Host, config.Redis_Port)
+func Init(config *config.AppConfig) {
+	address := fmt.Sprintf("%s:%v", config.RedisHost, config.RedisPort)
+	fmt.Println("Config obj: ", address)
 
-	client := redis.NewClient(&redis.Options{
+	client = redis.NewClient(&redis.Options{
 		Addr: address,
 		Password: "",
 		DB: 0, // use default db
@@ -30,11 +33,14 @@ func Init(config *config.Config) {
 }
 
 func Set(key string, value string) error {
+	fmt.Printf("Redis instance: %v \n", client)
+
 	err := client.Set(ctx, key, value, 0).Err()
 	if err != nil {
 		fmt.Printf("Failed to set value in the redis instance: %v \n", err.Error())
 		return err
 	}
+
 	return nil
 }
 
