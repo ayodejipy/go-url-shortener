@@ -18,10 +18,11 @@ CREATE TABLE "urls" (
 	"short_code" VARCHAR(20) UNIQUE NOT NULL,
 	"click_count" INT DEFAULT 0,
 	"is_active" BOOLEAN DEFAULT TRUE,
-	-- "user_id" uuid REFERENCES users("id"),
-	"created_at" TIMESTAMP NOT NULL DEFAULT (NOW()),
-)
+	"user_id" uuid REFERENCES users("id"),
+	"created_at" TIMESTAMP NOT NULL DEFAULT (NOW())
+);
 
 
-ALTER TABLE "urls" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id")
+ALTER TABLE "urls" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
+CREATE INDEX ON "urls" ("id");

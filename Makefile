@@ -16,6 +16,8 @@ up:
 down:
 	docker-compose down
 
+createdb:
+	docker exec -it go-api-dev-db-1 createdb --username=postgres url-shortener
 
 migratecreate:
 	migrate create -ext sql -dir $(MIGRATION_PATH) -seq $(name)
