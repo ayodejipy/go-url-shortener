@@ -8,11 +8,16 @@ import (
 
 
 func main() {
-	config, _ := config.LoadConfig()
-
+	config, err := config.LoadConfig()
+	if err != nil {
+		panic(err)
+	}
+	// init cache
 	cache.Init(config)
-	err := cache.Set("Name", "superb important value!")
-	fmt.Println("Cache error: ", err)
+	cacheErr := cache.Set("Name", "superb important value!")
+	fmt.Println("Cache error: ", cacheErr)
+
+	// init server
 	
 	val, err := cache.Get("Name")
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 type AppConfig struct {
 	ApiVersion, ApiTitle, ApiDescription string
 	RedisPort, RedisHost, RedisTtl string
-	DbHost, DbName, DbUser string
+	Dsn, DbHost, DbName, DbUser string
 	DbPort, DbPassword string
 }
 
@@ -29,6 +29,7 @@ func LoadConfig() (*AppConfig, error) {
 		DbPort: os.Getenv("DB_PORT"),
 		DbUser: os.Getenv("USERNAME"),
 		DbPassword: os.Getenv("PASSWORD"),
+		Dsn: os.Getenv("DATABASE_PSQL_URL"),
 		RedisPort: os.Getenv("REDIS_PORT"),
 		RedisHost: os.Getenv("REDIS_HOST"),
 		RedisTtl: os.Getenv("REDIS_TTL"),

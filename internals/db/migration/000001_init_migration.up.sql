@@ -7,6 +7,7 @@ CREATE TABLE "users" (
 	"last_name" VARCHAR(200) NOT NULL,
 	"password_hash" VARCHAR NOT NULL,
 	"role" VARCHAR(50) DEFAULT 'user',
+	"is_deleted" BOOLEAN DEFAULT FALSE,
 	"created_at" TIMESTAMP NOT NULL DEFAULT (NOW()),
 	"updated_at" TIMESTAMP NOT NULL DEFAULT (NOW()),
 	"deleted_at" TIMESTAMP NULL
@@ -19,7 +20,8 @@ CREATE TABLE "urls" (
 	"click_count" INT DEFAULT 0,
 	"is_active" BOOLEAN DEFAULT TRUE,
 	"user_id" uuid REFERENCES users("id"),
-	"created_at" TIMESTAMP NOT NULL DEFAULT (NOW())
+	"created_at" TIMESTAMP NOT NULL DEFAULT (NOW()),
+	"updated_at" TIMESTAMP NOT NULL DEFAULT (NOW())
 );
 
 
