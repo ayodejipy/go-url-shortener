@@ -10,7 +10,7 @@ CREATE TABLE "users" (
 	"is_deleted" BOOLEAN DEFAULT FALSE,
 	"created_at" TIMESTAMP NOT NULL DEFAULT (NOW()),
 	"updated_at" TIMESTAMP NOT NULL DEFAULT (NOW()),
-	"deleted_at" TIMESTAMP NULL
+	"deleted_at" TIMESTAMP DEFAULT NULL
 );
 
 CREATE TABLE "urls" (

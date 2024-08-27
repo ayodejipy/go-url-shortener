@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"rest/api/internals/api"
 	"rest/api/internals/cache"
 	"rest/api/internals/config"
 )
@@ -18,7 +19,9 @@ func main() {
 	fmt.Println("Cache error: ", cacheErr)
 
 	// init server
-	
+	api.NewServer(config)
+
+	// init cache
 	val, err := cache.Get("Name")
 	if err != nil {
 		fmt.Println("Get Cache err: ", err)

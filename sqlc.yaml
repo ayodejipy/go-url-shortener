@@ -2,11 +2,9 @@ version: '2'
 cloud:
   project: '01HG48TCHETBK2DTS4T70YZ7J6'
 sql:
-- schema: "./internals/db/migration"
+- schema: "./internals/db/migration/"
   queries: "./internals/db/query/"
   engine: postgresql
-  database:
-    managed: true
   gen:
     go:
       package: "db"

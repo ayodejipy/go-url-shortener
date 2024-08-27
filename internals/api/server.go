@@ -1,43 +1,47 @@
 package api
 
 import (
+	"context"
+	"fmt"
 	"log"
-	"database/sql"
 	"rest/api/internals/config"
+	db "rest/api/internals/db/sqlc"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Server struct {
 	config *config.AppConfig
 	router *chi.Mux
-	db *sql.DB
+	store db.Store
 }
 
 func NewServer(config *config.AppConfig) *Server {
 	r := chi.NewRouter()
-	// ctx := context.Background()
+	ctx := context.Background()
 
-	db, err := connectToDB(config.Dsn)
+	conn, err := connectToDB(ctx, config.Dsn)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v", err)
 	}
 
+	store := db.NewStore(conn)
+
 	return &Server{
 		config: config,
 		router: r,
-		db: db,
+		store: store,
 	}
 }
 
-func connectToDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", dsn)
+func connectToDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return nil, err
-		// panic(err)
 	}
-	
-	defer db.Close()
 
-	return db, nil
+	fmt.Println("Database connected successfully!")
+
+	return pool, nil
 }

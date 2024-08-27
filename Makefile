@@ -23,10 +23,12 @@ migratecreate:
 	migrate create -ext sql -dir $(MIGRATION_PATH) -seq $(name)
 
 migrateup:
-	migrate -path $(MIGRATION_PATH) -database "$(DATABASE_PSQL_URL)" -verbose up
+	migrate -path $(MIGRATION_PATH) -database $(DATABASE_PSQL_URL) -verbose up
 
 migratedown:
-	migrate -path $(MIGRATION_PATH) -database "$(DATABASE_PSQL_URL)" -verbose down
+	migrate -path $(MIGRATION_PATH) -database $(DATABASE_PSQL_URL) -verbose down
 
+sqlc:
+	sqlc generate
 
-.PHONY: build run up down migratecreate migrateup migratedown
+.PHONY: build run up down migratecreate migrateup migratedown sqlc
