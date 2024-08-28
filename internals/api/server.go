@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
 
@@ -33,6 +34,20 @@ func NewServer(config *config.AppConfig) *Server {
 		router: r,
 		store: store,
 	}
+}
+
+func (s *Server) Start(port string) {
+	s.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/text")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Hello world!"))
+	})
+
+	// run server
+	listenPort := fmt.Sprintf(":%v", port)
+	log.Fatal(http.ListenAndServe(listenPort, s.router))
+
+	fmt.Printf("Server started and running on http://localhost%s \n", listenPort);
 }
 
 func connectToDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
