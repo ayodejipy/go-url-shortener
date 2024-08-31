@@ -7,5 +7,5 @@ type PingService struct {
 }
 
 func (s PingService) Ping() []byte {
-	return []byte("PONG!")
+	return []byte("PONG! PONG!!")
 }

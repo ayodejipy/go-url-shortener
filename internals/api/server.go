@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"rest/api/internals/cache"
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
 
@@ -19,8 +20,13 @@ type Server struct {
 }
 
 func NewServer(config *config.AppConfig) *Server {
-	r := chi.NewRouter()
+	router := chi.NewRouter()
 	ctx := context.Background()
+
+	// init cache
+	cache.Init(config)
+	cacheErr := cache.Set("Name", "superb important value!")
+	fmt.Println("Cache error: ", cacheErr)
 
 	conn, err := connectToDB(ctx, config.Dsn)
 	if err != nil {
@@ -31,23 +37,27 @@ func NewServer(config *config.AppConfig) *Server {
 
 	return &Server{
 		config: config,
-		router: r,
+		router: router,
 		store: store,
 	}
 }
 
 func (s *Server) Start(port string) {
-	s.router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/text")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Hello world!"))
-	})
+	// fmt.Printf("Server struct: %v \n", s.router);
 
-	// run server
-	listenPort := fmt.Sprintf(":%v", port)
-	log.Fatal(http.ListenAndServe(listenPort, s.router))
+	SetupRoutes(s)
 
-	fmt.Printf("Server started and running on http://localhost%s \n", listenPort);
+	// start and listen to server on port
+	svr := &http.Server{
+		Handler: s.router,
+		Addr: ":" + port,
+	}
+	err := svr.ListenAndServe()
+	if err != nil {
+		log.Fatal("Server failed to start: %s\n", err)
+	}
+
+	fmt.Printf("Server started and running on http://localhost%s \n", port);
 }
 
 func connectToDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {

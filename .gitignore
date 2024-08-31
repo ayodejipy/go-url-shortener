@@ -1,2 +1,5 @@
-.env
 db-data
+vendor
+
+# environment
+.env
