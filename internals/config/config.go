@@ -8,7 +8,7 @@ import (
 )
 
 type AppConfig struct {
-	ApiVersion, ApiTitle, ApiDescription string
+	AppPort, ApiVersion, ApiTitle, ApiDescription string
 	RedisPort, RedisHost, RedisTtl string
 	Dsn, DbHost, DbName, DbUser string
 	DbPort, DbPassword string
@@ -21,6 +21,7 @@ func LoadConfig() (*AppConfig, error) {
 	}
 
 	config := &AppConfig{
+		AppPort: os.Getenv("APP_PORT"),
 		ApiVersion: os.Getenv("API_VERSION"),
 		ApiTitle: os.Getenv("API_TITLE"),
 		ApiDescription: os.Getenv("API_DESCRIPTION"),

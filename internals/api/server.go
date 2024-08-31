@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"rest/api/internals/cache"
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
 
@@ -18,8 +20,13 @@ type Server struct {
 }
 
 func NewServer(config *config.AppConfig) *Server {
-	r := chi.NewRouter()
+	router := chi.NewRouter()
 	ctx := context.Background()
+
+	// init cache
+	cache.Init(config)
+	cacheErr := cache.Set("Name", "superb important value!")
+	fmt.Println("Cache error: ", cacheErr)
 
 	conn, err := connectToDB(ctx, config.Dsn)
 	if err != nil {
@@ -30,9 +37,27 @@ func NewServer(config *config.AppConfig) *Server {
 
 	return &Server{
 		config: config,
-		router: r,
+		router: router,
 		store: store,
 	}
+}
+
+func (s *Server) Start(port string) {
+	// fmt.Printf("Server struct: %v \n", s.router);
+
+	SetupRoutes(s)
+
+	// start and listen to server on port
+	svr := &http.Server{
+		Handler: s.router,
+		Addr: ":" + port,
+	}
+	err := svr.ListenAndServe()
+	if err != nil {
+		log.Fatal("Server failed to start: %s\n", err)
+	}
+
+	fmt.Printf("Server started and running on http://localhost%s \n", port);
 }
 
 func connectToDB(ctx context.Context, dsn string) (*pgxpool.Pool, error) {

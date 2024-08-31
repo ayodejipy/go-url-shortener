@@ -3,6 +3,7 @@ ifneq (,$(wildcard ./.env))
 	export
 endif
 
+# alias air='~/go/bin/air'
 
 build:
 	go build -o bin/api cmd/api/main.go && bin/api
