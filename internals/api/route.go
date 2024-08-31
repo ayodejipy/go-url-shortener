@@ -21,6 +21,6 @@ func SetupRoutes(s *Server) {
 
 	// register handlers
 	pHandler := handler.NewPingHandler(s.store)
-	pHandler.LoadPingRoute(router)
-	
+
+	router.Route("/", pHandler.LoadPingRoute)
 }

@@ -15,7 +15,6 @@ var (
 
 func Init(config *config.AppConfig) {
 	address := fmt.Sprintf("%s:%v", config.RedisHost, config.RedisPort)
-	fmt.Println("Config obj: ", address)
 
 	client = redis.NewClient(&redis.Options{
 		Addr: address,
@@ -33,7 +32,6 @@ func Init(config *config.AppConfig) {
 }
 
 func Set(key string, value string) error {
-	fmt.Printf("Redis instance: %v \n", client)
 
 	err := client.Set(ctx, key, value, 0).Err()
 	if err != nil {

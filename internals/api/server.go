@@ -26,7 +26,7 @@ func NewServer(config *config.AppConfig) *Server {
 	// init cache
 	cache.Init(config)
 	cacheErr := cache.Set("Name", "superb important value!")
-	fmt.Println("Cache error: ", cacheErr)
+	fmt.Println("SetCache error: ", cacheErr)
 
 	conn, err := connectToDB(ctx, config.Dsn)
 	if err != nil {
@@ -54,7 +54,7 @@ func (s *Server) Start(port string) {
 	}
 	err := svr.ListenAndServe()
 	if err != nil {
-		log.Fatal("Server failed to start: %s\n", err)
+		log.Fatal("Server failed to start: ", err)
 	}
 
 	fmt.Printf("Server started and running on http://localhost%s \n", port);

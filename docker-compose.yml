@@ -16,7 +16,7 @@ services:
 
   # start a redis container
   redis:
-    image: 'redis:latest'
+    image: 'redis/redis-stack:latest'
     ports:
       - '6379:6379'
       - '8000:8001'
