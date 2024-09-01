@@ -28,8 +28,8 @@ func NewAuthHandler(store db.Store, config *config.AppConfig) *AuthHandler {
 
 // Load routes
 func (h *AuthHandler) LoadAuthRoutes(router chi.Router) {
-	router.Get("/login", h.login)
-	router.Get("/register", h.register)
+	router.Post("/login", h.login)
+	router.Post("/register", h.register)
 }
 
 
