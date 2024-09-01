@@ -1,12 +1,12 @@
 package dto
 
-import "github.com/jackc/pgx/pgtype"
+import "github.com/jackc/pgx/v5/pgtype"
 
 
 type TokenPayload struct {
 	ID pgtype.UUID `json:"id"`
 	Email string `json:"email"`
-	Role string `json:"role"`
+	Role pgtype.Text `json:"role"`
 }
 
 type CreateUser struct {

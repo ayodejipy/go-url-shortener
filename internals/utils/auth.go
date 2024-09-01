@@ -2,7 +2,6 @@ package utils
 
 import (
 	"errors"
-	"rest/api/internals/config"
 	"rest/api/internals/dto"
 	"time"
 
@@ -35,7 +34,7 @@ func (a *Auth) ComparePassword(userPassword string, savedPassword string) error 
 	return nil
 }
 
-func (a *Auth) GenerateToken(payload dto.TokenPayload) (string, error) {
+func (a *Auth) GenerateToken(payload dto.TokenPayload, secret string) (string, error) {
 	unSignedToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": payload.ID,
 		"email": payload.Email,
@@ -44,7 +43,7 @@ func (a *Auth) GenerateToken(payload dto.TokenPayload) (string, error) {
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
-	token, err := unSignedToken.SignedString([]byte(config.))
+	token, err := unSignedToken.SignedString([]byte(secret))
 	if err != nil {
 		return "", errors.New("cannot sign token")
 	}
