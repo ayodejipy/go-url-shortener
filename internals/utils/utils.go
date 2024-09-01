@@ -27,7 +27,7 @@ func WriteMessage(w http.ResponseWriter, code int, payload Response) error {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err
 	}
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
 

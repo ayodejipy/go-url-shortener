@@ -20,14 +20,14 @@ type Url struct {
 }
 
 type User struct {
-	ID           pgtype.UUID      `json:"id"`
-	Email        string           `json:"email"`
-	FirstName    string           `json:"first_name"`
-	LastName     string           `json:"last_name"`
-	PasswordHash string           `json:"password_hash"`
-	Role         pgtype.Text      `json:"role"`
-	IsDeleted    pgtype.Bool      `json:"is_deleted"`
-	CreatedAt    pgtype.Timestamp `json:"created_at"`
-	UpdatedAt    pgtype.Timestamp `json:"updated_at"`
-	DeletedAt    pgtype.Timestamp `json:"deleted_at"`
+	ID        pgtype.UUID      `json:"id"`
+	Email     string           `json:"email"`
+	FirstName string           `json:"first_name"`
+	LastName  string           `json:"last_name"`
+	Password  string           `json:"password"`
+	Role      pgtype.Text      `json:"role"`
+	IsDeleted pgtype.Bool      `json:"is_deleted"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+	UpdatedAt pgtype.Timestamp `json:"updated_at"`
+	DeletedAt pgtype.Timestamp `json:"deleted_at"`
 }

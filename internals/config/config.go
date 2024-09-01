@@ -11,7 +11,7 @@ type AppConfig struct {
 	AppPort, ApiVersion, ApiTitle, ApiDescription string
 	RedisPort, RedisHost, RedisTtl string
 	Dsn, DbHost, DbName, DbUser string
-	DbPort, DbPassword string
+	DbPort, DbPassword, JwtSecret string
 }
 
 func LoadConfig() (*AppConfig, error) {
@@ -34,6 +34,7 @@ func LoadConfig() (*AppConfig, error) {
 		RedisPort: os.Getenv("REDIS_PORT"),
 		RedisHost: os.Getenv("REDIS_HOST"),
 		RedisTtl: os.Getenv("REDIS_TTL"),
+		JwtSecret: os.Getenv("JWT_SECRET"),
 	}
 
 	return config, nil

@@ -5,7 +5,7 @@ CREATE TABLE "users" (
 	"email" VARCHAR(100) UNIQUE NOT NULL,
 	"first_name" VARCHAR(200) NOT NULL,
 	"last_name" VARCHAR(200) NOT NULL,
-	"password_hash" VARCHAR NOT NULL,
+	"password" VARCHAR NOT NULL,
 	"role" VARCHAR(50) DEFAULT 'user',
 	"is_deleted" BOOLEAN DEFAULT FALSE,
 	"created_at" TIMESTAMP NOT NULL DEFAULT (NOW()),

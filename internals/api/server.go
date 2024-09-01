@@ -25,8 +25,6 @@ func NewServer(config *config.AppConfig) *Server {
 
 	// init cache
 	cache.Init(config)
-	cacheErr := cache.Set("Name", "superb important value!")
-	fmt.Println("SetCache error: ", cacheErr)
 
 	conn, err := connectToDB(ctx, config.Dsn)
 	if err != nil {
@@ -43,8 +41,6 @@ func NewServer(config *config.AppConfig) *Server {
 }
 
 func (s *Server) Start(port string) {
-	// fmt.Printf("Server struct: %v \n", s.router);
-
 	SetupRoutes(s)
 
 	// start and listen to server on port
