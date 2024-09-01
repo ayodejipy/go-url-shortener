@@ -39,6 +39,7 @@ func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 	// parse the request body into json
 	if err := utils.ParseJSON(r, &req); err != nil {
 		utils.BadRequestError(w, err)
+		return
 	}
 
 	user := db.CreateUserParams{
@@ -51,6 +52,7 @@ func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 	token, err := h.svc.Register(r.Context(), user)
 	if err != nil {
 		utils.ErrorMessage(w, err)
+		return
 	}
 
 	utils.SuccessMessage(w, utils.Response{
@@ -63,7 +65,25 @@ func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 
 
 func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
+	req := dto.LoginPayload{}
+
+	// parse the request body
+	if err := utils.ParseJSON(r, &req); err != nil {
+		utils.BadRequestError(w, err)
+		return
+	}
+
+	// send the body to the service
+	token, err := h.svc.Login(r.Context(), req)
+	if err != nil {
+		utils.ErrorMessage(w, err)
+		return
+	}
+
 	utils.SuccessMessage(w, utils.Response{
-		Message: "Login Message returned.",
+		Message: "User logged in successfully",
+		Data: map[string]string{
+			"accessToken": token,
+		},
 	})
 }

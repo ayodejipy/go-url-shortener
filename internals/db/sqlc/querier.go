@@ -18,6 +18,7 @@ type Querier interface {
 	GetUrl(ctx context.Context, id pgtype.UUID) (Url, error)
 	GetUrls(ctx context.Context) ([]Url, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, error)
+	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUsers(ctx context.Context) ([]GetUsersRow, error)
 	UpdateUrlClickCount(ctx context.Context, arg UpdateUrlClickCountParams) (UpdateUrlClickCountRow, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)

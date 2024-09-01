@@ -15,7 +15,49 @@ type AuthService struct {
 	Config *config.AppConfig
 }
 
-func (s *AuthService) Login() {}
+// var (
+//     ErrInvalidCredentials = errors.New("invalid credentials")
+//     ErrUserNotFound       = errors.New("user not found")
+//     ErrTokenFailed       = errors.New("token generation failed")
+// )
+
+func (s *AuthService) GetUserByEmail(ctx context.Context, email string) (db.GetUserByEmailRow, error) {
+	user, err := s.Store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return db.GetUserByEmailRow{}, err
+	}
+
+	return user, nil
+}
+
+func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (string, error) {
+	auth := &utils.Auth{}
+
+	// find user by email
+	user, err := s.GetUserByEmail(ctx, params.Email)
+	if err != nil {
+		return "", errors.New("invalid credentials")
+	}
+
+	// compare whether password is correct
+	err = auth.ComparePassword(params.Password, user.Password)
+	if err != nil {
+		return "", errors.New("credentials mismatch")
+	}
+
+	payload := dto.TokenPayload{
+		ID: user.ID,
+		Email: user.Email,
+		Role: user.Role,
+	}
+
+	token, err := auth.GenerateToken(payload, s.Config.JwtSecret)
+	if err != nil {
+		return "", errors.New("token generation failed")
+	}
+
+	return token, nil
+}
 
 func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserParams) (string, error) {
 	auth := &utils.Auth{}

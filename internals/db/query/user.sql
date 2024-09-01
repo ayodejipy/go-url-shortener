@@ -8,6 +8,11 @@ SELECT id, email, first_name, last_name, password, role, created_at, updated_at,
 FROM users 
 WHERE id = $1 AND is_deleted = FALSE LIMIT 1;
 
+-- name: GetUserByEmail :one
+SELECT id, email, first_name, last_name, password, role, created_at, updated_at, deleted_at 
+FROM users 
+WHERE email = $1 AND is_deleted = FALSE LIMIT 1;
+
 -- name: GetUsers :many
 SELECT id, email, first_name, last_name, password, role, created_at, updated_at, deleted_at 
 FROM users 

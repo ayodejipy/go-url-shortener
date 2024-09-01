@@ -9,6 +9,11 @@ type TokenPayload struct {
 	Role pgtype.Text `json:"role"`
 }
 
+type LoginPayload struct {
+	Email string `json:"email"`
+	Password string `json:"password"`
+}
+
 type CreateUser struct {
 	Email string `json:"email"`
 	FirstName string `json:"first_name"`
