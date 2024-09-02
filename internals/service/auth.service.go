@@ -45,8 +45,8 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 	// compare whether password is correct
 	err = auth.ComparePassword(user.Password, params.Password)
 	if err != nil {
-		s.Logger.Error("Error occurred: %v", err)
-		return "", err
+		s.Logger.Error("auth.ComparePassword: %v", err)
+		return "", errors.New("credentials mismatch")
 	}
 
 	payload := dto.TokenPayload{
@@ -57,7 +57,7 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 
 	token, err := auth.GenerateToken(payload, s.Config.JwtSecret)
 	if err != nil {
-		s.Logger.Error("Error occurred: %v", err)
+		s.Logger.Error("auth.GenerateToken: %v", err)
 		return "", errors.New("token generation failed")
 	}
 
@@ -70,6 +70,7 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 	// hash the password
 	hash, err := auth.HashPassword(userParams.Password)
 	if err != nil {
+		s.Logger.Error("auth.HashPassword: %v", err)
 		return "", errors.New("unable to hash password")
 	}
 
@@ -79,6 +80,7 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 	// save the record to the database
 	createdUser, err := s.Store.CreateUser(ctx, userParams)
 	if err != nil {
+		s.Logger.Error("s.Store.CreateUser: %v", err)
 		return "", errors.New("failed to create new user")
 	}
 
@@ -92,6 +94,7 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 
 	token, err := auth.GenerateToken(payload, secret)
 	if err != nil {
+		s.Logger.Error("auth.GenerateToken: %v", err)
 		return "", errors.New("unable to generate token")
 	}
 	
