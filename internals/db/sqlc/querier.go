@@ -11,15 +11,20 @@ import (
 )
 
 type Querier interface {
+	CreatePasswordToken(ctx context.Context, arg CreatePasswordTokenParams) (CreatePasswordTokenRow, error)
 	CreateUrl(ctx context.Context, arg CreateUrlParams) (Url, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
+	DeleteExpiredTokens(ctx context.Context) error
+	DeletePasswordToken(ctx context.Context, id pgtype.UUID) error
 	DeleteUrl(ctx context.Context, id pgtype.UUID) error
 	DeleteUser(ctx context.Context, arg DeleteUserParams) error
+	GetPasswordToken(ctx context.Context, token string) (PasswordReset, error)
 	GetUrl(ctx context.Context, id pgtype.UUID) (Url, error)
 	GetUrls(ctx context.Context) ([]Url, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUsers(ctx context.Context) ([]GetUsersRow, error)
+	UpdatePasswordToken(ctx context.Context, arg UpdatePasswordTokenParams) (UpdatePasswordTokenRow, error)
 	UpdateUrlClickCount(ctx context.Context, arg UpdateUrlClickCountParams) (UpdateUrlClickCountRow, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
 }

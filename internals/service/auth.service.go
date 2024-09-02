@@ -8,6 +8,9 @@ import (
 	"rest/api/internals/dto"
 	"rest/api/internals/logger"
 	"rest/api/internals/utils"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 
@@ -39,7 +42,7 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 	user, err := s.GetUserByEmail(ctx, params.Email)
 	if err != nil {
 		s.Logger.Error("Error occurred: %v", err)
-		return "", errors.New("invalid credentials")
+		return "", errors.New("invalid user")
 	}
 
 	// compare whether password is correct
@@ -101,6 +104,38 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 	return token, nil
 }
 
-func (s *AuthService) ResetPassword() {}
+func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPasswordPayload) (string, error) {
+	auth := &utils.Auth{}
 
-func (s *AuthService) ForgotPassword() {}
+	// find user by email
+	user, err := s.GetUserByEmail(ctx, params.Email)
+	if err != nil {
+		s.Logger.Error("[s.GetUserByEmail:] %v", err)
+		return "", errors.New("invalid user")
+	}
+	// Generate token and set the expiry time
+	expiresAt := time.Now().Add(1 * time.Hour).UTC()
+	val, err := auth.GenerateRandomCode(32)
+	if err != nil {
+		s.Logger.Error("Error [auth.GenerateRandomCode]: %v", err)
+		return "", errors.New("invalid credentials")
+	}
+
+	resetTokenPayload := db.CreatePasswordTokenParams{
+		Token: val,
+		IsActive: pgtype.Bool{Bool: true, Valid: true},
+		UserID: user.ID,
+		ExpiresAt: pgtype.Timestamp{Time: expiresAt, Valid: true},
+
+	}
+
+	record, err := s.Store.CreatePasswordToken(ctx, resetTokenPayload)
+	if err != nil {
+		s.Logger.Error("[s.Store.CreatePasswordToken]: %v", err)
+		return "", errors.New("something went wrong")
+	}
+	// TODO: trigger email to user account 
+	return record.Token, nil
+}
+
+func (s *AuthService) ResetPassword() {}

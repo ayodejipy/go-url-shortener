@@ -34,6 +34,7 @@ func NewAuthHandler(store db.Store, config *config.AppConfig, logger *logger.Log
 func (h *AuthHandler) LoadAuthRoutes(router chi.Router) {
 	router.Post("/login", h.login)
 	router.Post("/register", h.register)
+	router.Post("/forgot-password", h.forgotPassword)
 }
 
 
@@ -88,6 +89,30 @@ func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
 		Message: "User logged in successfully",
 		Data: map[string]string{
 			"accessToken": token,
+		},
+	})
+}
+
+func (h *AuthHandler) forgotPassword(w http.ResponseWriter, r *http.Request) {
+	req := dto.ForgotPasswordPayload{}
+
+	// parse the request body
+	if err := utils.ParseJSON(r, &req); err != nil {
+		utils.BadRequestError(w, err)
+		return
+	}
+
+	// send the body to the service
+	resetCode, err := h.svc.ForgotPassword(r.Context(), req)
+	if err != nil {
+		utils.ErrorMessage(w, err)
+		return
+	}
+
+	utils.SuccessMessage(w, utils.Response{
+		Message: "Password reset email sent",
+		Data: map[string]string{
+			"reset-code": resetCode,
 		},
 	})
 }

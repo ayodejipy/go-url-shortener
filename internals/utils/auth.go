@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"rest/api/internals/dto"
 	"time"
@@ -48,4 +50,13 @@ func (a *Auth) GenerateToken(payload dto.TokenPayload, secret string) (string, e
 	}
 
 	return token, nil
+}
+
+func (a *Auth) GenerateRandomCode(codeLength int) (string, error) {
+	bytes := make([]byte, codeLength)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(bytes), nil
 }

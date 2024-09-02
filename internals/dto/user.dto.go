@@ -14,6 +14,10 @@ type LoginPayload struct {
 	Password string `json:"password"`
 }
 
+type ForgotPasswordPayload struct {
+	Email string `json:"email"`
+}
+
 type CreateUser struct {
 	Email string `json:"email"`
 	FirstName string `json:"first_name"`
