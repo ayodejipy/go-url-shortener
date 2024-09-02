@@ -19,17 +19,16 @@ func (a *Auth) HashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	if err != nil {
-		return "", errors.New("something went wrong")
+		return "", err
 	}
 
 	return string(hash), nil
 }
 
-func (a *Auth) ComparePassword(userPassword string, savedPassword string) error {
-	err := bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(savedPassword))
-
+func (a *Auth) ComparePassword(hashedPassword string, userPassword string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(userPassword),)
 	if err != nil {
-		return errors.New("password mismatch")
+		return err
 	}
 	return nil
 }
@@ -45,7 +44,7 @@ func (a *Auth) GenerateToken(payload dto.TokenPayload, secret string) (string, e
 	// Sign and get the complete encoded token as a string using the secret
 	token, err := unSignedToken.SignedString([]byte(secret))
 	if err != nil {
-		return "", errors.New("cannot sign token")
+		return "", err
 	}
 
 	return token, nil

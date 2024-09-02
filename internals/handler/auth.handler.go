@@ -5,7 +5,10 @@ import (
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
 	"rest/api/internals/dto"
+	"rest/api/internals/logger"
 	"rest/api/internals/service"
+
+	// "rest/api/internals/service"
 	"rest/api/internals/utils"
 
 	"github.com/go-chi/chi/v5"
@@ -15,10 +18,11 @@ type AuthHandler struct {
 	svc *service.AuthService
 }
 
-func NewAuthHandler(store db.Store, config *config.AppConfig) *AuthHandler {
+func NewAuthHandler(store db.Store, config *config.AppConfig, logger *logger.Logger) *AuthHandler {
 	svc := &service.AuthService{
 		Store: store,
 		Config: config,
+		Logger: logger,
 	}
 
 	return &AuthHandler{

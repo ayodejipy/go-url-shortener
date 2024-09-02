@@ -8,6 +8,7 @@ import (
 	"rest/api/internals/cache"
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
+	"rest/api/internals/logger"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,6 +18,7 @@ type Server struct {
 	config *config.AppConfig
 	router *chi.Mux
 	store db.Store
+	logger *logger.Logger
 }
 
 func NewServer(config *config.AppConfig) *Server {
@@ -33,10 +35,13 @@ func NewServer(config *config.AppConfig) *Server {
 
 	store := db.NewStore(conn)
 
+	logger := logger.NewLoggerHandler()
+
 	return &Server{
 		config: config,
 		router: router,
 		store: store,
+		logger: logger,
 	}
 }
 
@@ -53,6 +58,7 @@ func (s *Server) Start(port string) {
 		log.Fatal("Server failed to start: ", err)
 	}
 
+	s.logger.Info("Server started and running on http://localhost%s \n", port)
 	fmt.Printf("Server started and running on http://localhost%s \n", port);
 }
 

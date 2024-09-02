@@ -6,6 +6,7 @@ import (
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
 	"rest/api/internals/dto"
+	"rest/api/internals/logger"
 	"rest/api/internals/utils"
 )
 
@@ -13,6 +14,7 @@ import (
 type AuthService struct {
 	Store db.Store
 	Config *config.AppConfig
+	Logger *logger.Logger
 }
 
 // var (
@@ -36,13 +38,15 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 	// find user by email
 	user, err := s.GetUserByEmail(ctx, params.Email)
 	if err != nil {
+		s.Logger.Error("Error occurred: %v", err)
 		return "", errors.New("invalid credentials")
 	}
 
 	// compare whether password is correct
-	err = auth.ComparePassword(params.Password, user.Password)
+	err = auth.ComparePassword(user.Password, params.Password)
 	if err != nil {
-		return "", errors.New("credentials mismatch")
+		s.Logger.Error("Error occurred: %v", err)
+		return "", err
 	}
 
 	payload := dto.TokenPayload{
@@ -53,6 +57,7 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 
 	token, err := auth.GenerateToken(payload, s.Config.JwtSecret)
 	if err != nil {
+		s.Logger.Error("Error occurred: %v", err)
 		return "", errors.New("token generation failed")
 	}
 

@@ -21,7 +21,7 @@ func SetupRoutes(s *Server) {
 
 	// register handlers
 	pHandler := handler.NewPingHandler(s.store)
-	authHandler := handler.NewAuthHandler(s.store, s.config)
+	authHandler := handler.NewAuthHandler(s.store, s.config, s.logger)
 
 	// Group routes
 	router.Route("/", pHandler.LoadPingRoute)
