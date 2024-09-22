@@ -19,6 +19,8 @@ func SetupRoutes(s *Server) {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
+	// email.NewSendEmailHandler(s.config, s.logger)
+
 	// register handlers
 	pHandler := handler.NewPingHandler(s.store)
 	authHandler := handler.NewAuthHandler(s.store, s.config, s.logger)

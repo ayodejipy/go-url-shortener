@@ -12,6 +12,8 @@ type AppConfig struct {
 	RedisPort, RedisHost, RedisTtl string
 	Dsn, DbHost, DbName, DbUser string
 	DbPort, DbPassword, JwtSecret string
+	MailMailer, MailHost, MailPort, MailUsername, MailPassword, MailEncryption string
+	MailtrapApiKey string
 }
 
 func LoadConfig() (*AppConfig, error) {
@@ -35,6 +37,13 @@ func LoadConfig() (*AppConfig, error) {
 		RedisHost: os.Getenv("REDIS_HOST"),
 		RedisTtl: os.Getenv("REDIS_TTL"),
 		JwtSecret: os.Getenv("JWT_SECRET"),
+		MailMailer: os.Getenv("MAIL_MAILER"),
+		MailHost: os.Getenv("MAIL_HOST"),
+		MailPort: os.Getenv("MAIL_PORT"),
+		MailUsername: os.Getenv("MAIL_USERNAME"),
+		MailPassword: os.Getenv("MAIL_PASSWORD"),
+		MailEncryption: os.Getenv("MAIL_ENCRYPTION"),
+		MailtrapApiKey: os.Getenv("MAILTRAP_API_KEY"),
 	}
 
 	return config, nil

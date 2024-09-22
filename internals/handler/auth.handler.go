@@ -103,7 +103,7 @@ func (h *AuthHandler) forgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send the body to the service
-	resetCode, err := h.svc.ForgotPassword(r.Context(), req)
+	err := h.svc.ForgotPassword(r.Context(), req)
 	if err != nil {
 		utils.ErrorMessage(w, err)
 		return
@@ -111,8 +111,10 @@ func (h *AuthHandler) forgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	utils.SuccessMessage(w, utils.Response{
 		Message: "Password reset email sent",
-		Data: map[string]string{
-			"reset-code": resetCode,
-		},
+		Data: map[string]string{},
 	})
+}
+
+func (h *AuthHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
+	
 }

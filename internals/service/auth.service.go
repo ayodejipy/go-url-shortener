@@ -6,6 +6,7 @@ import (
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
 	"rest/api/internals/dto"
+	"rest/api/internals/email"
 	"rest/api/internals/logger"
 	"rest/api/internals/utils"
 	"time"
@@ -33,6 +34,24 @@ func (s *AuthService) GetUserByEmail(ctx context.Context, email string) (db.GetU
 	}
 
 	return user, nil
+}
+
+func (s *AuthService) VerifyPasswordResetToken(ctx context.Context, token string) (bool, error) {
+	record, err := s.Store.GetPasswordToken(ctx, token)
+	if err != nil {
+		s.Logger.Error("[s.Store.GetPasswordToken:] %v", err)
+		return false, errors.New("invalid token")
+	}
+
+	if record.ExpiresAt.Valid {
+		if time.Now().After(record.ExpiresAt.Time) {
+			return false, errors.New("token expired")
+		}
+	} else {
+		return false, errors.New("invalid token timestamp")
+	}
+
+	return true, nil
 }
 
 func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (string, error) {
@@ -104,21 +123,21 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 	return token, nil
 }
 
-func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPasswordPayload) (string, error) {
+func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPasswordPayload) error {
 	auth := &utils.Auth{}
 
 	// find user by email
 	user, err := s.GetUserByEmail(ctx, params.Email)
 	if err != nil {
 		s.Logger.Error("[s.GetUserByEmail:] %v", err)
-		return "", errors.New("invalid user")
+		return errors.New("invalid user")
 	}
 	// Generate token and set the expiry time
 	expiresAt := time.Now().Add(1 * time.Hour).UTC()
 	val, err := auth.GenerateRandomCode(32)
 	if err != nil {
 		s.Logger.Error("Error [auth.GenerateRandomCode]: %v", err)
-		return "", errors.New("invalid credentials")
+		return errors.New("invalid credentials")
 	}
 
 	resetTokenPayload := db.CreatePasswordTokenParams{
@@ -132,10 +151,34 @@ func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPassw
 	record, err := s.Store.CreatePasswordToken(ctx, resetTokenPayload)
 	if err != nil {
 		s.Logger.Error("[s.Store.CreatePasswordToken]: %v", err)
-		return "", errors.New("something went wrong")
+		return errors.New("something went wrong")
 	}
-	// TODO: trigger email to user account 
-	return record.Token, nil
+	// TODO: trigger email to user account
+	emailHandler := email.NewSendEmailHandler(s.Config, s.Logger)
+	emailHandler.SendPasswordToken(record.Token, "user@example.com")
+
+	return nil
 }
 
-func (s *AuthService) ResetPassword() {}
+func (s *AuthService) ResetPassword(ctx context.Context, params dto.ResetPasswordPayload) error {
+	// find user by email
+	_, err := s.GetUserByEmail(ctx, params.Email)
+	if err != nil {
+		s.Logger.Error("[s.GetUserByEmail:] %v", err)
+		return errors.New("invalid user")
+	}
+	// get token and check expiry
+	ok, err := s.VerifyPasswordResetToken(ctx, params.Token)
+	if err != nil {
+		s.Logger.Error("[s.VerifyPasswordResetToken:] %v", err)
+		return errors.New("invalid token")
+	}
+
+	if ok {
+		return nil
+		// update password
+		// invalidate the toke or let it run expiry
+	}
+
+	return nil
+}

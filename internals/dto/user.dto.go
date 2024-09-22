@@ -18,6 +18,13 @@ type ForgotPasswordPayload struct {
 	Email string `json:"email"`
 }
 
+type ResetPasswordPayload struct {
+	Token string `json:"token"`
+	Email string `json:"email"`
+	NewPassword string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
+
 type CreateUser struct {
 	Email string `json:"email"`
 	FirstName string `json:"first_name"`
