@@ -14,9 +14,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-
 type AuthService struct {
-	Store db.Store
+	Store  db.Store
 	Config *config.AppConfig
 	Logger *logger.Logger
 }
@@ -72,9 +71,9 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 	}
 
 	payload := dto.TokenPayload{
-		ID: user.ID,
+		ID:    user.ID,
 		Email: user.Email,
-		Role: user.Role,
+		Role:  user.Role,
 	}
 
 	token, err := auth.GenerateToken(payload, s.Config.JwtSecret)
@@ -109,9 +108,9 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 	// Generate token for user
 	secret := s.Config.JwtSecret
 	payload := dto.TokenPayload{
-		ID: createdUser.ID,
+		ID:    createdUser.ID,
 		Email: createdUser.Email,
-		Role: createdUser.Role,
+		Role:  createdUser.Role,
 	}
 
 	token, err := auth.GenerateToken(payload, secret)
@@ -119,7 +118,7 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 		s.Logger.Error("auth.GenerateToken: %v", err)
 		return "", errors.New("unable to generate token")
 	}
-	
+
 	return token, nil
 }
 
@@ -141,11 +140,10 @@ func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPassw
 	}
 
 	resetTokenPayload := db.CreatePasswordTokenParams{
-		Token: val,
-		IsActive: pgtype.Bool{Bool: true, Valid: true},
-		UserID: user.ID,
+		Token:     val,
+		IsActive:  pgtype.Bool{Bool: true, Valid: true},
+		UserID:    user.ID,
 		ExpiresAt: pgtype.Timestamp{Time: expiresAt, Valid: true},
-
 	}
 
 	record, err := s.Store.CreatePasswordToken(ctx, resetTokenPayload)
@@ -161,24 +159,55 @@ func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPassw
 }
 
 func (s *AuthService) ResetPassword(ctx context.Context, params dto.ResetPasswordPayload) error {
+	auth := &utils.Auth{}
+
 	// find user by email
-	_, err := s.GetUserByEmail(ctx, params.Email)
+	user, err := s.GetUserByEmail(ctx, params.Email)
 	if err != nil {
 		s.Logger.Error("[s.GetUserByEmail:] %v", err)
-		return errors.New("invalid user")
+		return errors.New("unknown user")
 	}
 	// get token and check expiry
-	ok, err := s.VerifyPasswordResetToken(ctx, params.Token)
-	if err != nil {
+	if _, err = s.VerifyPasswordResetToken(ctx, params.Token); err != nil {
 		s.Logger.Error("[s.VerifyPasswordResetToken:] %v", err)
-		return errors.New("invalid token")
+		return err
 	}
 
-	if ok {
-		return nil
-		// update password
-		// invalidate the toke or let it run expiry
+	// hash new password
+	newHash, err := auth.HashPassword(params.Password)
+	if err != nil {
+		s.Logger.Error("auth.HashPassword: %v", err)
+		return errors.New("error handling password")
 	}
+
+	updateUserPayload := db.UpdateUserParams{
+		ID:        user.ID,
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Password:  newHash,
+		Role:      user.Role,
+	}
+
+	_, err = s.Store.UpdateUser(ctx, updateUserPayload)
+	if err != nil {
+		s.Logger.Error("[s.Store.UpdateUser:] %v", err)
+		return errors.New("error updating user password")
+	}
+
+	_, err = s.Store.UpdatePasswordToken(ctx, db.UpdatePasswordTokenParams{
+		Token:     params.Token,
+		IsActive:  pgtype.Bool{Bool: false, Valid: true},
+		ExpiresAt: pgtype.Timestamp{Time: time.Now(), Valid: true},
+	})
+	if err != nil {
+		s.Logger.Error("[s.Store.UpdatePasswordToken:] %v", err)
+		return errors.New("error invalidating token")
+	}
+
+	// TODO: trigger email to user account
+	emailHandler := email.NewSendEmailHandler(s.Config, s.Logger)
+	emailHandler.SendPasswordResetMail("user@example.com")
 
 	return nil
 }

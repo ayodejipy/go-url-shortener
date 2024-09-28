@@ -35,6 +35,7 @@ func (h *AuthHandler) LoadAuthRoutes(router chi.Router) {
 	router.Post("/login", h.login)
 	router.Post("/register", h.register)
 	router.Post("/forgot-password", h.forgotPassword)
+	router.Post("/reset-password", h.resetPassword)
 }
 
 
@@ -116,5 +117,21 @@ func (h *AuthHandler) forgotPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
-	
+	payload := dto.ResetPasswordPayload{}
+
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.BadRequestError(w, err)
+		return
+	}
+
+	err := h.svc.ResetPassword(r.Context(), payload)
+	if err != nil {
+		utils.ErrorMessage(w, err)
+		return
+	}
+
+	utils.SuccessMessage(w, utils.Response{
+		Message: "Password reset succesfully.",
+		Data: map[string]string{},
+	})
 }
