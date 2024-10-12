@@ -36,8 +36,8 @@ func (s *AuthService) GetUserByEmail(ctx context.Context, email string) (db.GetU
 	return user, nil
 }
 
-func (s *AuthService) VerifyPasswordResetToken(ctx context.Context, token string) (bool, error) {
-	record, err := s.Store.GetPasswordToken(ctx, token)
+func (s *AuthService) VerifyTokenGenerated(ctx context.Context, token string) (bool, error) {
+	record, err := s.Store.GetVerifyCode(ctx, token)
 	if err != nil {
 		s.Logger.Error("[s.Store.GetPasswordToken:] %v", err)
 		return false, errors.New("invalid token")
@@ -145,7 +145,7 @@ func (s *AuthService) GetVerificationCode(ctx context.Context, user db.CreateUse
 		return errors.New("invalid credentials")
 	}
 	verificationCodePayload := db.CreateVerifyCodeParams{
-		Code: val,
+		Token: val,
 		IsActive:  pgtype.Bool{Bool: true, Valid: true},
 		UserID:    user.ID,
 		ExpiresAt: pgtype.Timestamp{Time: expiresAt, Valid: true},
@@ -159,7 +159,36 @@ func (s *AuthService) GetVerificationCode(ctx context.Context, user db.CreateUse
 
 	// TODO: trigger email to user account
 	emailHandler := email.NewSendEmailHandler(s.Config, s.Logger)
-	emailHandler.SendPasswordToken(record.Code, user.Email)
+	emailHandler.SendPasswordToken(record.Token, user.Email)
+
+	return nil
+}
+
+func (s *AuthService) VerifyUser(ctx context.Context, code string) error {
+	// get user from context
+	user := ctx.Value("user").(db.CreateUserRow)
+
+	// check if user is already verified
+	if s.isUserVerified(ctx, user.ID) {
+		return errors.New("user already verified")
+	}
+
+	// verify the code
+	if _, err := s.VerifyTokenGenerated(ctx, code); err != nil {
+		s.Logger.Error("[s.VerifyTokenGenerated:] %v", err)
+		return err
+	}
+	// update user
+	updateUserPayload := db.UpdateUserParams{
+		ID:        user.ID,
+		IsVerified: pgtype.Bool{Bool: true, Valid: true},
+	}
+
+	_, err := s.Store.UpdateUser(ctx, updateUserPayload)
+	if err != nil {
+		s.Logger.Error("[s.Store.UpdateUser:] %v", err)
+		return errors.New("error updating user password")
+	}
 
 	return nil
 }
@@ -181,16 +210,16 @@ func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPassw
 		return errors.New("invalid credentials")
 	}
 
-	resetTokenPayload := db.CreatePasswordTokenParams{
+	resetTokenPayload := db.CreateVerifyCodeParams{
 		Token:     val,
 		IsActive:  pgtype.Bool{Bool: true, Valid: true},
 		UserID:    user.ID,
 		ExpiresAt: pgtype.Timestamp{Time: expiresAt, Valid: true},
 	}
 
-	record, err := s.Store.CreatePasswordToken(ctx, resetTokenPayload)
+	record, err := s.Store.CreateVerifyCode(ctx, resetTokenPayload)
 	if err != nil {
-		s.Logger.Error("[s.Store.CreatePasswordToken]: %v", err)
+		s.Logger.Error("[s.Store.CreateVerifyCode]: %v", err)
 		return errors.New("something went wrong")
 	}
 	// TODO: trigger email to user account
@@ -210,8 +239,8 @@ func (s *AuthService) ResetPassword(ctx context.Context, params dto.ResetPasswor
 		return errors.New("unknown user")
 	}
 	// get token and check expiry
-	if _, err = s.VerifyPasswordResetToken(ctx, params.Token); err != nil {
-		s.Logger.Error("[s.VerifyPasswordResetToken:] %v", err)
+	if _, err = s.VerifyTokenGenerated(ctx, params.Token); err != nil {
+		s.Logger.Error("[s.VerifyTokenGenerated:] %v", err)
 		return err
 	}
 
@@ -237,7 +266,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, params dto.ResetPasswor
 		return errors.New("error updating user password")
 	}
 
-	_, err = s.Store.UpdatePasswordToken(ctx, db.UpdatePasswordTokenParams{
+	_, err = s.Store.UpdateVerifyCode(ctx, db.UpdateVerifyCodeParams{
 		Token:     params.Token,
 		IsActive:  pgtype.Bool{Bool: false, Valid: true},
 		ExpiresAt: pgtype.Timestamp{Time: time.Now(), Valid: true},

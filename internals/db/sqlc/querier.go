@@ -11,24 +11,19 @@ import (
 )
 
 type Querier interface {
-	CreatePasswordToken(ctx context.Context, arg CreatePasswordTokenParams) (CreatePasswordTokenRow, error)
 	CreateUrl(ctx context.Context, arg CreateUrlParams) (Url, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	CreateVerifyCode(ctx context.Context, arg CreateVerifyCodeParams) (CreateVerifyCodeRow, error)
 	DeleteExpiredCodes(ctx context.Context) error
-	DeleteExpiredTokens(ctx context.Context) error
-	DeletePasswordToken(ctx context.Context, id pgtype.UUID) error
 	DeleteUrl(ctx context.Context, id pgtype.UUID) error
 	DeleteUser(ctx context.Context, arg DeleteUserParams) error
 	DeleteVerifyCode(ctx context.Context, id pgtype.UUID) error
-	GetPasswordToken(ctx context.Context, token string) (PasswordReset, error)
 	GetUrl(ctx context.Context, id pgtype.UUID) (Url, error)
 	GetUrls(ctx context.Context) ([]Url, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUsers(ctx context.Context) ([]GetUsersRow, error)
-	GetVerifyCode(ctx context.Context, code string) (VerificationCode, error)
-	UpdatePasswordToken(ctx context.Context, arg UpdatePasswordTokenParams) (UpdatePasswordTokenRow, error)
+	GetVerifyCode(ctx context.Context, token string) (VerificationCode, error)
 	UpdateUrlClickCount(ctx context.Context, arg UpdateUrlClickCountParams) (UpdateUrlClickCountRow, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
 	UpdateVerifyCode(ctx context.Context, arg UpdateVerifyCodeParams) (UpdateVerifyCodeRow, error)

@@ -12,13 +12,13 @@ import (
 )
 
 const createVerifyCode = `-- name: CreateVerifyCode :one
-INSERT INTO verification_codes (code, expires_at, is_active, user_id, created_at, updated_at)
+INSERT INTO verification_codes (token, expires_at, is_active, user_id, created_at, updated_at)
 VALUES ($1, $2, $3, $4, NOW(), NOW())
-RETURNING id, code, expires_at, is_active, user_id created_at, updated_at
+RETURNING id, token, expires_at, is_active, user_id created_at, updated_at
 `
 
 type CreateVerifyCodeParams struct {
-	Code      string           `json:"code"`
+	Token     string           `json:"token"`
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`
 	IsActive  pgtype.Bool      `json:"is_active"`
 	UserID    pgtype.UUID      `json:"user_id"`
@@ -26,7 +26,7 @@ type CreateVerifyCodeParams struct {
 
 type CreateVerifyCodeRow struct {
 	ID        pgtype.UUID      `json:"id"`
-	Code      string           `json:"code"`
+	Token     string           `json:"token"`
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`
 	IsActive  pgtype.Bool      `json:"is_active"`
 	CreatedAt pgtype.UUID      `json:"created_at"`
@@ -35,7 +35,7 @@ type CreateVerifyCodeRow struct {
 
 func (q *Queries) CreateVerifyCode(ctx context.Context, arg CreateVerifyCodeParams) (CreateVerifyCodeRow, error) {
 	row := q.db.QueryRow(ctx, createVerifyCode,
-		arg.Code,
+		arg.Token,
 		arg.ExpiresAt,
 		arg.IsActive,
 		arg.UserID,
@@ -43,7 +43,7 @@ func (q *Queries) CreateVerifyCode(ctx context.Context, arg CreateVerifyCodePara
 	var i CreateVerifyCodeRow
 	err := row.Scan(
 		&i.ID,
-		&i.Code,
+		&i.Token,
 		&i.ExpiresAt,
 		&i.IsActive,
 		&i.CreatedAt,
@@ -72,16 +72,16 @@ func (q *Queries) DeleteVerifyCode(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getVerifyCode = `-- name: GetVerifyCode :one
-SELECT id, code, is_active, expires_at, user_id, created_at, updated_at FROM verification_codes 
-WHERE code = $1 LIMIT 1
+SELECT id, token, is_active, expires_at, user_id, created_at, updated_at FROM verification_codes 
+WHERE token = $1 LIMIT 1
 `
 
-func (q *Queries) GetVerifyCode(ctx context.Context, code string) (VerificationCode, error) {
-	row := q.db.QueryRow(ctx, getVerifyCode, code)
+func (q *Queries) GetVerifyCode(ctx context.Context, token string) (VerificationCode, error) {
+	row := q.db.QueryRow(ctx, getVerifyCode, token)
 	var i VerificationCode
 	err := row.Scan(
 		&i.ID,
-		&i.Code,
+		&i.Token,
 		&i.IsActive,
 		&i.ExpiresAt,
 		&i.UserID,
@@ -94,19 +94,19 @@ func (q *Queries) GetVerifyCode(ctx context.Context, code string) (VerificationC
 const updateVerifyCode = `-- name: UpdateVerifyCode :one
 UPDATE verification_codes 
 SET expires_at = $2, is_active = $3
-WHERE code = $1
-RETURNING id, code, expires_at, is_active, user_id created_at, updated_at
+WHERE token = $1
+RETURNING id, token, expires_at, is_active, user_id created_at, updated_at
 `
 
 type UpdateVerifyCodeParams struct {
-	Code      string           `json:"code"`
+	Token     string           `json:"token"`
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`
 	IsActive  pgtype.Bool      `json:"is_active"`
 }
 
 type UpdateVerifyCodeRow struct {
 	ID        pgtype.UUID      `json:"id"`
-	Code      string           `json:"code"`
+	Token     string           `json:"token"`
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`
 	IsActive  pgtype.Bool      `json:"is_active"`
 	CreatedAt pgtype.UUID      `json:"created_at"`
@@ -114,11 +114,11 @@ type UpdateVerifyCodeRow struct {
 }
 
 func (q *Queries) UpdateVerifyCode(ctx context.Context, arg UpdateVerifyCodeParams) (UpdateVerifyCodeRow, error) {
-	row := q.db.QueryRow(ctx, updateVerifyCode, arg.Code, arg.ExpiresAt, arg.IsActive)
+	row := q.db.QueryRow(ctx, updateVerifyCode, arg.Token, arg.ExpiresAt, arg.IsActive)
 	var i UpdateVerifyCodeRow
 	err := row.Scan(
 		&i.ID,
-		&i.Code,
+		&i.Token,
 		&i.ExpiresAt,
 		&i.IsActive,
 		&i.CreatedAt,

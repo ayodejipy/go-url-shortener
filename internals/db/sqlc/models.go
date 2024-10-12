@@ -8,16 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type PasswordReset struct {
-	ID        pgtype.UUID      `json:"id"`
-	Token     string           `json:"token"`
-	IsActive  pgtype.Bool      `json:"is_active"`
-	ExpiresAt pgtype.Timestamp `json:"expires_at"`
-	UserID    pgtype.UUID      `json:"user_id"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-}
-
 type Url struct {
 	ID          pgtype.UUID      `json:"id"`
 	OriginalUrl string           `json:"original_url"`
@@ -45,7 +35,7 @@ type User struct {
 
 type VerificationCode struct {
 	ID        pgtype.UUID      `json:"id"`
-	Code      string           `json:"code"`
+	Token     string           `json:"token"`
 	IsActive  pgtype.Bool      `json:"is_active"`
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`
 	UserID    pgtype.UUID      `json:"user_id"`
