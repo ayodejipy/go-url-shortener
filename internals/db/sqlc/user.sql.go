@@ -64,7 +64,7 @@ const deleteUser = `-- name: DeleteUser :exec
 UPDATE users 
 SET is_deleted = $2, deleted_at = NOW()
 WHERE id = $1
-RETURNING id, email, first_name, last_name, password, role, created_at, updated_at, deleted_at
+RETURNING id, email, first_name, last_name, password, role, is_verified, created_at, updated_at, deleted_at
 `
 
 type DeleteUserParams struct {
@@ -78,21 +78,22 @@ func (q *Queries) DeleteUser(ctx context.Context, arg DeleteUserParams) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, first_name, last_name, password, role, created_at, updated_at, deleted_at 
+SELECT id, email, first_name, last_name, password, role, is_verified, created_at, updated_at, deleted_at 
 FROM users 
 WHERE id = $1 AND is_deleted = FALSE LIMIT 1
 `
 
 type GetUserRow struct {
-	ID        pgtype.UUID      `json:"id"`
-	Email     string           `json:"email"`
-	FirstName string           `json:"first_name"`
-	LastName  string           `json:"last_name"`
-	Password  string           `json:"password"`
-	Role      pgtype.Text      `json:"role"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	DeletedAt pgtype.Timestamp `json:"deleted_at"`
+	ID         pgtype.UUID      `json:"id"`
+	Email      string           `json:"email"`
+	FirstName  string           `json:"first_name"`
+	LastName   string           `json:"last_name"`
+	Password   string           `json:"password"`
+	Role       pgtype.Text      `json:"role"`
+	IsVerified pgtype.Bool      `json:"is_verified"`
+	CreatedAt  pgtype.Timestamp `json:"created_at"`
+	UpdatedAt  pgtype.Timestamp `json:"updated_at"`
+	DeletedAt  pgtype.Timestamp `json:"deleted_at"`
 }
 
 func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, error) {
@@ -105,6 +106,7 @@ func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, erro
 		&i.LastName,
 		&i.Password,
 		&i.Role,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -113,21 +115,22 @@ func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, erro
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, first_name, last_name, password, role, created_at, updated_at, deleted_at 
+SELECT id, email, first_name, last_name, password, role, is_verified, created_at, updated_at, deleted_at 
 FROM users 
 WHERE email = $1 AND is_deleted = FALSE LIMIT 1
 `
 
 type GetUserByEmailRow struct {
-	ID        pgtype.UUID      `json:"id"`
-	Email     string           `json:"email"`
-	FirstName string           `json:"first_name"`
-	LastName  string           `json:"last_name"`
-	Password  string           `json:"password"`
-	Role      pgtype.Text      `json:"role"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	DeletedAt pgtype.Timestamp `json:"deleted_at"`
+	ID         pgtype.UUID      `json:"id"`
+	Email      string           `json:"email"`
+	FirstName  string           `json:"first_name"`
+	LastName   string           `json:"last_name"`
+	Password   string           `json:"password"`
+	Role       pgtype.Text      `json:"role"`
+	IsVerified pgtype.Bool      `json:"is_verified"`
+	CreatedAt  pgtype.Timestamp `json:"created_at"`
+	UpdatedAt  pgtype.Timestamp `json:"updated_at"`
+	DeletedAt  pgtype.Timestamp `json:"deleted_at"`
 }
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
@@ -140,6 +143,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 		&i.LastName,
 		&i.Password,
 		&i.Role,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -197,30 +201,32 @@ func (q *Queries) GetUsers(ctx context.Context) ([]GetUsersRow, error) {
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users 
-SET email = $2, first_name = $3, last_name = $4, password = $5, role = $6, updated_at = NOW()
+SET email = $2, first_name = $3, last_name = $4, password = $5, role = $6, is_verified = $7, updated_at = NOW()
 WHERE id = $1
-RETURNING id, email, first_name, last_name, password, role, created_at, updated_at, deleted_at
+RETURNING id, email, first_name, last_name, password, role, is_verified, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
-	ID        pgtype.UUID `json:"id"`
-	Email     string      `json:"email"`
-	FirstName string      `json:"first_name"`
-	LastName  string      `json:"last_name"`
-	Password  string      `json:"password"`
-	Role      pgtype.Text `json:"role"`
+	ID         pgtype.UUID `json:"id"`
+	Email      string      `json:"email"`
+	FirstName  string      `json:"first_name"`
+	LastName   string      `json:"last_name"`
+	Password   string      `json:"password"`
+	Role       pgtype.Text `json:"role"`
+	IsVerified pgtype.Bool `json:"is_verified"`
 }
 
 type UpdateUserRow struct {
-	ID        pgtype.UUID      `json:"id"`
-	Email     string           `json:"email"`
-	FirstName string           `json:"first_name"`
-	LastName  string           `json:"last_name"`
-	Password  string           `json:"password"`
-	Role      pgtype.Text      `json:"role"`
-	CreatedAt pgtype.Timestamp `json:"created_at"`
-	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	DeletedAt pgtype.Timestamp `json:"deleted_at"`
+	ID         pgtype.UUID      `json:"id"`
+	Email      string           `json:"email"`
+	FirstName  string           `json:"first_name"`
+	LastName   string           `json:"last_name"`
+	Password   string           `json:"password"`
+	Role       pgtype.Text      `json:"role"`
+	IsVerified pgtype.Bool      `json:"is_verified"`
+	CreatedAt  pgtype.Timestamp `json:"created_at"`
+	UpdatedAt  pgtype.Timestamp `json:"updated_at"`
+	DeletedAt  pgtype.Timestamp `json:"deleted_at"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error) {
@@ -231,6 +237,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		arg.LastName,
 		arg.Password,
 		arg.Role,
+		arg.IsVerified,
 	)
 	var i UpdateUserRow
 	err := row.Scan(
@@ -240,6 +247,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		&i.LastName,
 		&i.Password,
 		&i.Role,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

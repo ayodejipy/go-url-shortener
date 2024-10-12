@@ -60,3 +60,22 @@ func (a *Auth) GenerateRandomCode(codeLength int) (string, error) {
 
 	return hex.EncodeToString(bytes), nil
 }
+
+func (a *Auth) GenerateOTP(codeLength int) (string, error) {
+	// charset
+	const charset = "1234567890"
+	// make a slice with size of our codelength
+	buffer := make([]byte, codeLength);
+
+	_, err := rand.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	otpCharLength := len(charset)
+	for i := 0; i < codeLength; i++ {
+		buffer[i] = charset[int(buffer[i])%otpCharLength];
+	}
+
+	return string(buffer), nil
+}

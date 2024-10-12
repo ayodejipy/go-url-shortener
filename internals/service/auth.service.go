@@ -18,6 +18,7 @@ type AuthService struct {
 	Store  db.Store
 	Config *config.AppConfig
 	Logger *logger.Logger
+	Utils utils.Auth
 }
 
 // var (
@@ -51,6 +52,15 @@ func (s *AuthService) VerifyPasswordResetToken(ctx context.Context, token string
 	}
 
 	return true, nil
+}
+
+func (s *AuthService) isUserVerified(ctx context.Context, id pgtype.UUID) bool {
+	currentUser, err := s.Store.GetUser(ctx, id)
+	if err != nil {
+		s.Logger.Error("[s.Store.GetUser:] %v", err)
+		return false
+	}
+	return currentUser.IsVerified.Bool
 }
 
 func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (string, error) {
@@ -122,6 +132,38 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 	return token, nil
 }
 
+func (s *AuthService) GetVerificationCode(ctx context.Context, user db.CreateUserRow) error {
+	// check if user is already verified
+	if s.isUserVerified(ctx, user.ID) {
+		return errors.New("user already verified")
+	}
+	// generate verification code
+	expiresAt := time.Now().Add(30 * time.Minute).UTC()
+	val, err := s.Utils.GenerateOTP(6)
+	if err != nil {
+		s.Logger.Error("Error [auth.GenerateOTP]: %v", err)
+		return errors.New("invalid credentials")
+	}
+	verificationCodePayload := db.CreateVerifyCodeParams{
+		Code: val,
+		IsActive:  pgtype.Bool{Bool: true, Valid: true},
+		UserID:    user.ID,
+		ExpiresAt: pgtype.Timestamp{Time: expiresAt, Valid: true},
+	}
+	// save the code to db for reference
+	record, err := s.Store.CreateVerifyCode(ctx, verificationCodePayload)
+	if err != nil {
+		s.Logger.Error("[s.Store.CreateVerifyCode]: %v", err)
+		return errors.New("something went wrong")
+	}
+
+	// TODO: trigger email to user account
+	emailHandler := email.NewSendEmailHandler(s.Config, s.Logger)
+	emailHandler.SendPasswordToken(record.Code, user.Email)
+
+	return nil
+}
+
 func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPasswordPayload) error {
 	auth := &utils.Auth{}
 
@@ -153,7 +195,7 @@ func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPassw
 	}
 	// TODO: trigger email to user account
 	emailHandler := email.NewSendEmailHandler(s.Config, s.Logger)
-	emailHandler.SendPasswordToken(record.Token, "user@example.com")
+	emailHandler.SendPasswordToken(record.Token, params.Email)
 
 	return nil
 }

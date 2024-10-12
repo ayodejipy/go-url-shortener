@@ -30,14 +30,25 @@ type Url struct {
 }
 
 type User struct {
+	ID         pgtype.UUID      `json:"id"`
+	Email      string           `json:"email"`
+	FirstName  string           `json:"first_name"`
+	LastName   string           `json:"last_name"`
+	Password   string           `json:"password"`
+	Role       pgtype.Text      `json:"role"`
+	IsVerified pgtype.Bool      `json:"is_verified"`
+	IsDeleted  pgtype.Bool      `json:"is_deleted"`
+	CreatedAt  pgtype.Timestamp `json:"created_at"`
+	UpdatedAt  pgtype.Timestamp `json:"updated_at"`
+	DeletedAt  pgtype.Timestamp `json:"deleted_at"`
+}
+
+type VerificationCode struct {
 	ID        pgtype.UUID      `json:"id"`
-	Email     string           `json:"email"`
-	FirstName string           `json:"first_name"`
-	LastName  string           `json:"last_name"`
-	Password  string           `json:"password"`
-	Role      pgtype.Text      `json:"role"`
-	IsDeleted pgtype.Bool      `json:"is_deleted"`
+	Code      string           `json:"code"`
+	IsActive  pgtype.Bool      `json:"is_active"`
+	ExpiresAt pgtype.Timestamp `json:"expires_at"`
+	UserID    pgtype.UUID      `json:"user_id"`
 	CreatedAt pgtype.Timestamp `json:"created_at"`
 	UpdatedAt pgtype.Timestamp `json:"updated_at"`
-	DeletedAt pgtype.Timestamp `json:"deleted_at"`
 }
