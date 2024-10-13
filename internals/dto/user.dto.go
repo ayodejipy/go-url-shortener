@@ -13,6 +13,10 @@ type LoginPayload struct {
 	Password string `json:"password"`
 }
 
+type VerifyEmailPayload struct {
+	Code string `json:"code"`
+}
+
 type ForgotPasswordPayload struct {
 	Email string `json:"email"`
 }

@@ -18,7 +18,7 @@ type AuthService struct {
 	Store  db.Store
 	Config *config.AppConfig
 	Logger *logger.Logger
-	Utils utils.Auth
+	Utils  utils.Auth
 }
 
 // var (
@@ -63,6 +63,63 @@ func (s *AuthService) isUserVerified(ctx context.Context, id pgtype.UUID) bool {
 	return currentUser.IsVerified.Bool
 }
 
+func (s *AuthService) GetVerificationCode(ctx context.Context, user db.CreateUserRow) (string, error) {
+	// check if user is already verified
+	if s.isUserVerified(ctx, user.ID) {
+		return "", errors.New("user already verified")
+	}
+	// generate verification code
+	expiresAt := time.Now().Add(30 * time.Minute).UTC()
+	val, err := s.Utils.GenerateOTP(6)
+	if err != nil {
+		s.Logger.Error("Error [auth.GenerateOTP]: %v", err)
+		return "", errors.New("invalid credentials")
+	}
+	verificationCodePayload := db.CreateVerifyCodeParams{
+		Token:     val,
+		IsActive:  pgtype.Bool{Bool: true, Valid: true},
+		UserID:    user.ID,
+		ExpiresAt: pgtype.Timestamp{Time: expiresAt, Valid: true},
+	}
+	// save the code to db for reference
+	record, err := s.Store.CreateVerifyCode(ctx, verificationCodePayload)
+	if err != nil {
+		s.Logger.Error("[s.Store.CreateVerifyCode]: %v", err)
+		return "", errors.New("something went wrong")
+	}
+
+	return record.Token, nil
+}
+
+func (s *AuthService) VerifyUser(ctx context.Context, code string) error {
+	// get user from context
+	user := ctx.Value("user").(db.CreateUserRow)
+
+	// check if user is already verified
+	if s.isUserVerified(ctx, user.ID) {
+		return errors.New("user already verified")
+	}
+
+	// verify the code
+	if _, err := s.VerifyTokenGenerated(ctx, code); err != nil {
+		s.Logger.Error("[s.VerifyTokenGenerated:] %v", err)
+		return err
+	}
+	// update user
+	updateUserPayload := db.UpdateUserParams{
+		ID:         user.ID,
+		IsVerified: pgtype.Bool{Bool: true, Valid: true},
+	}
+
+	_, err := s.Store.UpdateUser(ctx, updateUserPayload)
+	if err != nil {
+		s.Logger.Error("[s.Store.UpdateUser:] %v", err)
+		return errors.New("error updating user password")
+	}
+
+	return nil
+}
+
 func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (string, error) {
 	auth := &utils.Auth{}
 
@@ -95,14 +152,21 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 	return token, nil
 }
 
-func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserParams) (string, error) {
+func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserParams) error {
 	auth := &utils.Auth{}
+
+	// find user by email
+	// TODO: can function be better?
+	user, _ := s.GetUserByEmail(ctx, userParams.Email)
+	if user.Email == userParams.Email {
+		return errors.New("user already exists")
+	}
 
 	// hash the password
 	hash, err := auth.HashPassword(userParams.Password)
 	if err != nil {
 		s.Logger.Error("auth.HashPassword: %v", err)
-		return "", errors.New("unable to hash password")
+		return errors.New("unable to hash password")
 	}
 
 	// save hashed password
@@ -112,83 +176,32 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 	createdUser, err := s.Store.CreateUser(ctx, userParams)
 	if err != nil {
 		s.Logger.Error("s.Store.CreateUser: %v", err)
-		return "", errors.New("failed to create new user")
+		return errors.New("failed to create new user")
+	}
+
+	code, err := s.GetVerificationCode(ctx, createdUser)
+	if err != nil {
+		s.Logger.Error("s.GetVerificationCode: %v", err)
+		return err
 	}
 
 	// Generate token for user
-	secret := s.Config.JwtSecret
-	payload := dto.TokenPayload{
-		ID:    createdUser.ID,
-		Email: createdUser.Email,
-		Role:  createdUser.Role,
-	}
+	// secret := s.Config.JwtSecret
+	// payload := dto.TokenPayload{
+	// 	ID:    createdUser.ID,
+	// 	Email: createdUser.Email,
+	// 	Role:  createdUser.Role,
+	// }
 
-	token, err := auth.GenerateToken(payload, secret)
-	if err != nil {
-		s.Logger.Error("auth.GenerateToken: %v", err)
-		return "", errors.New("unable to generate token")
-	}
-
-	return token, nil
-}
-
-func (s *AuthService) GetVerificationCode(ctx context.Context, user db.CreateUserRow) error {
-	// check if user is already verified
-	if s.isUserVerified(ctx, user.ID) {
-		return errors.New("user already verified")
-	}
-	// generate verification code
-	expiresAt := time.Now().Add(30 * time.Minute).UTC()
-	val, err := s.Utils.GenerateOTP(6)
-	if err != nil {
-		s.Logger.Error("Error [auth.GenerateOTP]: %v", err)
-		return errors.New("invalid credentials")
-	}
-	verificationCodePayload := db.CreateVerifyCodeParams{
-		Token: val,
-		IsActive:  pgtype.Bool{Bool: true, Valid: true},
-		UserID:    user.ID,
-		ExpiresAt: pgtype.Timestamp{Time: expiresAt, Valid: true},
-	}
-	// save the code to db for reference
-	record, err := s.Store.CreateVerifyCode(ctx, verificationCodePayload)
-	if err != nil {
-		s.Logger.Error("[s.Store.CreateVerifyCode]: %v", err)
-		return errors.New("something went wrong")
-	}
+	// token, err := auth.GenerateToken(payload, secret)
+	// if err != nil {
+	// 	s.Logger.Error("auth.GenerateToken: %v", err)
+	// 	return "", errors.New("unable to generate token")
+	// }
 
 	// TODO: trigger email to user account
 	emailHandler := email.NewSendEmailHandler(s.Config, s.Logger)
-	emailHandler.SendPasswordToken(record.Token, user.Email)
-
-	return nil
-}
-
-func (s *AuthService) VerifyUser(ctx context.Context, code string) error {
-	// get user from context
-	user := ctx.Value("user").(db.CreateUserRow)
-
-	// check if user is already verified
-	if s.isUserVerified(ctx, user.ID) {
-		return errors.New("user already verified")
-	}
-
-	// verify the code
-	if _, err := s.VerifyTokenGenerated(ctx, code); err != nil {
-		s.Logger.Error("[s.VerifyTokenGenerated:] %v", err)
-		return err
-	}
-	// update user
-	updateUserPayload := db.UpdateUserParams{
-		ID:        user.ID,
-		IsVerified: pgtype.Bool{Bool: true, Valid: true},
-	}
-
-	_, err := s.Store.UpdateUser(ctx, updateUserPayload)
-	if err != nil {
-		s.Logger.Error("[s.Store.UpdateUser:] %v", err)
-		return errors.New("error updating user password")
-	}
+	emailHandler.SendPasswordToken(code, createdUser.Email)
 
 	return nil
 }

@@ -85,6 +85,29 @@ func (s *SendEmailHandler) SendPasswordToken(token string, toEmail string) error
 	return nil
 }
 
+func (s *SendEmailHandler) SendOTPEmail(token string, toEmail string) error {
+	to := []string{"kate.doe@example.com"}
+
+	message := `{
+		"from":{"email":"hello@example.com"},
+		"to":[{"email":"jeggsatony@gmail.com"}],
+		"subject":"Verification code",
+		"text":"Here's your one time verification code: #token",
+		"category":"Integration Test"
+	}`
+
+	message = strings.Replace(message, "#token", token, 1)
+
+	err := s.sendEmail(to, message)
+	if err != nil {
+		s.Logger.Error("[SendPasswordToken]: %v", err)
+		log.Fatal(err)
+		return nil
+	}
+
+	return nil
+}
+
 func (s *SendEmailHandler) SendPasswordResetMail(to string) error {
 	message := `{
 		"from":{"email":"hello@example.com"},

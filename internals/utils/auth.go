@@ -52,6 +52,16 @@ func (a *Auth) GenerateToken(payload dto.TokenPayload, secret string) (string, e
 	return token, nil
 }
 
+func (a *Auth) DecodeToken(token string, secret string) (*jwt.Token, error) {
+	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+
+		return []byte(secret), nil
+	})
+}
+
 func (a *Auth) GenerateRandomCode(codeLength int) (string, error) {
 	bytes := make([]byte, codeLength)
 	if _, err := rand.Read(bytes); err != nil {

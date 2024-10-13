@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"rest/api/internals/api"
 	"rest/api/internals/config"
-	"rest/api/internals/utils"
 )
 
 func main() {

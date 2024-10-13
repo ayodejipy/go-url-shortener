@@ -2,20 +2,19 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 )
 
 type Response struct {
-	Success bool `json:"success"`
-	Message string `json:"message"`
-	Data interface{} `json:"data,omitempty"`
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
 }
-
 
 func ParseJSON(r *http.Request, payload interface{}) error {
 	if r.Body == nil {
-		return fmt.Errorf("Missing request body")
+		return errors.New("missing request body")
 	}
 	return json.NewDecoder(r.Body).Decode(payload)
 }
@@ -38,12 +37,12 @@ func SuccessMessage(w http.ResponseWriter, payload Response) {
 	WriteMessage(w, http.StatusOK, Response{
 		Success: true,
 		Message: payload.Message,
-		Data: payload.Data,
+		Data:    payload.Data,
 	})
 }
 
-func ErrorMessage(w http.ResponseWriter, err error) {
-	WriteMessage(w, http.StatusBadRequest, Response{
+func ErrorMessage(w http.ResponseWriter, code int, err error) {
+	WriteMessage(w, code, Response{
 		Success: false,
 		Message: err.Error(),
 	})
@@ -57,7 +56,7 @@ func InternalError(w http.ResponseWriter, err error) {
 }
 
 func BadRequestError(w http.ResponseWriter, err error) {
-	WriteMessage(w, http.StatusInternalServerError, Response{
+	WriteMessage(w, http.StatusBadRequest, Response{
 		Success: false,
 		Message: err.Error(),
 	})
