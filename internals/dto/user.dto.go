@@ -17,6 +17,10 @@ type VerifyEmailPayload struct {
 	Code string `json:"code"`
 }
 
+type RequestVerificationCodePayload struct {
+	Email string `json:"email"`
+}
+
 type ForgotPasswordPayload struct {
 	Email string `json:"email"`
 }

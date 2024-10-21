@@ -1,6 +1,7 @@
 db-data
 vendor
 tmp
+urlshortener-data
 
 # environment
 .env

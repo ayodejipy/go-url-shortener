@@ -5,6 +5,7 @@ import (
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
 	"rest/api/internals/dto"
+	"rest/api/internals/email"
 	"rest/api/internals/logger"
 	"rest/api/internals/middleware"
 	"rest/api/internals/service"
@@ -16,11 +17,12 @@ import (
 )
 
 type AuthHandler struct {
-	mw  *middleware.Middleware
 	svc *service.AuthService
+	mw  *middleware.Middleware
+	mailSender email.Email
 }
 
-func NewAuthHandler(store db.Store, config *config.AppConfig, logger *logger.Logger, mw *middleware.Middleware) *AuthHandler {
+func NewAuthHandler(store db.Store, config *config.AppConfig, logger *logger.Logger, mw *middleware.Middleware, mailSender email.Email) *AuthHandler {
 	svc := &service.AuthService{
 		Store:  store,
 		Config: config,
@@ -30,6 +32,7 @@ func NewAuthHandler(store db.Store, config *config.AppConfig, logger *logger.Log
 	return &AuthHandler{
 		svc: svc,
 		mw:  mw,
+		mailSender: mailSender,
 	}
 }
 
@@ -39,12 +42,13 @@ func (h *AuthHandler) LoadAuthRoutes(router chi.Router) {
 	router.Post("/register", h.register)
 	router.Post("/forgot-password", h.forgotPassword)
 	router.Post("/reset-password", h.resetPassword)
+	router.Post("/verify-email", h.verifyUser)
+	router.Post("/resend-code", h.resendCode)
 
 	// protected routes
-	router.Group(func(r chi.Router) {
-		r.Use(h.mw.AuthorizeUser())
-		r.Post("/verify", h.verifyUser)
-	})
+	// router.Group(func(r chi.Router) {
+	// 	r.Use(h.mw.AuthorizeUser())
+	// })
 }
 
 func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
@@ -111,17 +115,10 @@ func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// set cookie
-	cookie := http.Cookie{
-		Name:     "Authorization",
-		Value:    token,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   3600 * 24 * 30,
-		Secure:   false, // set to TRUE in production
-		Path:     "/",
-		Domain:   "",
-		HttpOnly: true,
+	if err = h.svc.SetAuthCookie(w, token); err != nil {
+		utils.BadRequestError(w, err)
+		return
 	}
-	http.SetCookie(w, &cookie)
 
 	utils.SuccessMessage(w, utils.Response{
 		Message: "User logged in successfully",
@@ -170,5 +167,30 @@ func (h *AuthHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	utils.SuccessMessage(w, utils.Response{
 		Message: "Password reset succesfully.",
 		Data:    map[string]string{},
+	})
+}
+
+func (h *AuthHandler) resendCode(w http.ResponseWriter, r *http.Request) {
+	body := dto.RequestVerificationCodePayload{}
+
+	if err := utils.ParseJSON(r, &body); err != nil {
+		utils.BadRequestError(w, err)
+		return
+	}
+
+	token, err := h.svc.GetVerificationCode(r.Context(), body)
+	if err != nil {
+		utils.BadRequestError(w, err)
+		return
+	}
+
+	err = h.mailSender.SendOTPEmail(token, body.Email)
+	if err != nil {
+		utils.BadRequestError(w, err)
+		return
+	}
+
+	utils.SuccessMessage(w, utils.Response{
+		Message: "Email verification code sent successfully.",
 	})
 }

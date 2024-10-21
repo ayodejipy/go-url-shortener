@@ -21,8 +21,9 @@ func SetupRoutes(s *Server) {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	// email handler
-	email.NewSendEmailHandler(s.config, s.logger)
+	// TODO: Pass email handler to routes to avoid reinstantiation
+	// email handler to be passed down routes
+	emailHandler := email.NewSendEmailHandler(s.config, s.logger)
 
 	// middleware
 	params := middleware.Middleware{
@@ -34,7 +35,7 @@ func SetupRoutes(s *Server) {
 
 	// register handlers
 	pHandler := handler.NewPingHandler(s.store)
-	authHandler := handler.NewAuthHandler(s.store, s.config, s.logger, middlewareHandler)
+	authHandler := handler.NewAuthHandler(s.store, s.config, s.logger, middlewareHandler, emailHandler)
 
 	// Group routes
 	router.Route("/", pHandler.LoadPingRoute)

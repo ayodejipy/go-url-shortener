@@ -201,9 +201,9 @@ func (q *Queries) GetUsers(ctx context.Context) ([]GetUsersRow, error) {
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users 
-SET email = $2, first_name = $3, last_name = $4, password = $5, role = $6, is_verified = $7, updated_at = NOW()
+SET email = $2, first_name = $3, last_name = $4, role = $5, is_verified = $6, updated_at = NOW()
 WHERE id = $1
-RETURNING id, email, first_name, last_name, password, role, is_verified, created_at, updated_at, deleted_at
+RETURNING id, email, first_name, last_name, role, is_verified, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
@@ -211,7 +211,6 @@ type UpdateUserParams struct {
 	Email      string      `json:"email"`
 	FirstName  string      `json:"first_name"`
 	LastName   string      `json:"last_name"`
-	Password   string      `json:"password"`
 	Role       pgtype.Text `json:"role"`
 	IsVerified pgtype.Bool `json:"is_verified"`
 }
@@ -221,7 +220,6 @@ type UpdateUserRow struct {
 	Email      string           `json:"email"`
 	FirstName  string           `json:"first_name"`
 	LastName   string           `json:"last_name"`
-	Password   string           `json:"password"`
 	Role       pgtype.Text      `json:"role"`
 	IsVerified pgtype.Bool      `json:"is_verified"`
 	CreatedAt  pgtype.Timestamp `json:"created_at"`
@@ -235,7 +233,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		arg.Email,
 		arg.FirstName,
 		arg.LastName,
-		arg.Password,
 		arg.Role,
 		arg.IsVerified,
 	)
@@ -245,7 +242,88 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		&i.Email,
 		&i.FirstName,
 		&i.LastName,
-		&i.Password,
+		&i.Role,
+		&i.IsVerified,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :one
+UPDATE users 
+SET password = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, email, first_name, last_name, role, is_verified, created_at, updated_at, deleted_at
+`
+
+type UpdateUserPasswordParams struct {
+	ID       pgtype.UUID `json:"id"`
+	Password string      `json:"password"`
+}
+
+type UpdateUserPasswordRow struct {
+	ID         pgtype.UUID      `json:"id"`
+	Email      string           `json:"email"`
+	FirstName  string           `json:"first_name"`
+	LastName   string           `json:"last_name"`
+	Role       pgtype.Text      `json:"role"`
+	IsVerified pgtype.Bool      `json:"is_verified"`
+	CreatedAt  pgtype.Timestamp `json:"created_at"`
+	UpdatedAt  pgtype.Timestamp `json:"updated_at"`
+	DeletedAt  pgtype.Timestamp `json:"deleted_at"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (UpdateUserPasswordRow, error) {
+	row := q.db.QueryRow(ctx, updateUserPassword, arg.ID, arg.Password)
+	var i UpdateUserPasswordRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.FirstName,
+		&i.LastName,
+		&i.Role,
+		&i.IsVerified,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const updateUserVerified = `-- name: UpdateUserVerified :one
+UPDATE users 
+SET is_verified = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, email, first_name, last_name, role, is_verified, created_at, updated_at, deleted_at
+`
+
+type UpdateUserVerifiedParams struct {
+	ID         pgtype.UUID `json:"id"`
+	IsVerified pgtype.Bool `json:"is_verified"`
+}
+
+type UpdateUserVerifiedRow struct {
+	ID         pgtype.UUID      `json:"id"`
+	Email      string           `json:"email"`
+	FirstName  string           `json:"first_name"`
+	LastName   string           `json:"last_name"`
+	Role       pgtype.Text      `json:"role"`
+	IsVerified pgtype.Bool      `json:"is_verified"`
+	CreatedAt  pgtype.Timestamp `json:"created_at"`
+	UpdatedAt  pgtype.Timestamp `json:"updated_at"`
+	DeletedAt  pgtype.Timestamp `json:"deleted_at"`
+}
+
+func (q *Queries) UpdateUserVerified(ctx context.Context, arg UpdateUserVerifiedParams) (UpdateUserVerifiedRow, error) {
+	row := q.db.QueryRow(ctx, updateUserVerified, arg.ID, arg.IsVerified)
+	var i UpdateUserVerifiedRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.FirstName,
+		&i.LastName,
 		&i.Role,
 		&i.IsVerified,
 		&i.CreatedAt,

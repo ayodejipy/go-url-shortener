@@ -1,6 +1,7 @@
 package email
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -79,7 +80,7 @@ func (s *SendEmailHandler) SendPasswordToken(token string, toEmail string) error
 	if err != nil {
 		s.Logger.Error("[SendPasswordToken]: %v", err)
 		log.Fatal(err)
-		return nil
+		return errors.New("failed to send [password reset] mail")
 	}
 
 	return nil
@@ -92,7 +93,7 @@ func (s *SendEmailHandler) SendOTPEmail(token string, toEmail string) error {
 		"from":{"email":"hello@example.com"},
 		"to":[{"email":"jeggsatony@gmail.com"}],
 		"subject":"Verification code",
-		"text":"Here's your one time verification code: #token",
+		"text":"Hurray! Good to have you onboard! Your one time verification code is #token",
 		"category":"Integration Test"
 	}`
 
@@ -100,9 +101,9 @@ func (s *SendEmailHandler) SendOTPEmail(token string, toEmail string) error {
 
 	err := s.sendEmail(to, message)
 	if err != nil {
-		s.Logger.Error("[SendPasswordToken]: %v", err)
-		log.Fatal(err)
-		return nil
+		s.Logger.Error("[SendOTPEmail]: %v", err)
+		// log.Fatal(err)
+		return errors.New("failed to send [OTP] verification mail")
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"net/http"
 	"rest/api/internals/config"
 	db "rest/api/internals/db/sqlc"
 	"rest/api/internals/dto"
@@ -36,22 +37,42 @@ func (s *AuthService) GetUserByEmail(ctx context.Context, email string) (db.GetU
 	return user, nil
 }
 
-func (s *AuthService) VerifyTokenGenerated(ctx context.Context, token string) (bool, error) {
+func (s *AuthService) VerifyTokenGenerated(ctx context.Context, token string) (db.VerificationCode, error) {
 	record, err := s.Store.GetVerifyCode(ctx, token)
 	if err != nil {
 		s.Logger.Error("[s.Store.GetPasswordToken:] %v", err)
-		return false, errors.New("invalid token")
+		return db.VerificationCode{}, errors.New("invalid token")
 	}
 
 	if record.ExpiresAt.Valid {
 		if time.Now().After(record.ExpiresAt.Time) {
-			return false, errors.New("token expired")
+			return db.VerificationCode{}, errors.New("token expired")
 		}
 	} else {
-		return false, errors.New("invalid token timestamp")
+		return db.VerificationCode{}, errors.New("invalid token timestamp")
 	}
 
-	return true, nil
+	return record, nil
+}
+
+func (s *AuthService) SetAuthCookie(w http.ResponseWriter, token string) error {
+	if token == "" {
+		return errors.New("token is required")
+	}
+	// set cookie
+	cookie := http.Cookie{
+		Name:     "Authorization",
+		Value:    token,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   3600 * 24 * 30,
+		Secure:   false, // set to TRUE in production
+		Path:     "/",
+		Domain:   "",
+		HttpOnly: true,
+	}
+	http.SetCookie(w, &cookie)
+
+	return nil
 }
 
 func (s *AuthService) isUserVerified(ctx context.Context, id pgtype.UUID) bool {
@@ -63,18 +84,28 @@ func (s *AuthService) isUserVerified(ctx context.Context, id pgtype.UUID) bool {
 	return currentUser.IsVerified.Bool
 }
 
-func (s *AuthService) GetVerificationCode(ctx context.Context, user db.CreateUserRow) (string, error) {
+func (s *AuthService) GetVerificationCode(ctx context.Context, payload dto.RequestVerificationCodePayload) (string, error) {
+	// fetch user
+	user, err := s.GetUserByEmail(ctx, payload.Email)
+	if err != nil {
+		s.Logger.Error("[s.GetUserByEmail]: %v", err)
+		return "", errors.New("invalid email")
+	}
+
 	// check if user is already verified
-	if s.isUserVerified(ctx, user.ID) {
+	if user.IsVerified.Bool {
 		return "", errors.New("user already verified")
 	}
+
 	// generate verification code
 	expiresAt := time.Now().Add(30 * time.Minute).UTC()
+
 	val, err := s.Utils.GenerateOTP(6)
 	if err != nil {
 		s.Logger.Error("Error [auth.GenerateOTP]: %v", err)
 		return "", errors.New("invalid credentials")
 	}
+
 	verificationCodePayload := db.CreateVerifyCodeParams{
 		Token:     val,
 		IsActive:  pgtype.Bool{Bool: true, Valid: true},
@@ -93,28 +124,36 @@ func (s *AuthService) GetVerificationCode(ctx context.Context, user db.CreateUse
 
 func (s *AuthService) VerifyUser(ctx context.Context, code string) error {
 	// get user from context
-	user := ctx.Value("user").(db.CreateUserRow)
-
-	// check if user is already verified
-	if s.isUserVerified(ctx, user.ID) {
-		return errors.New("user already verified")
-	}
+	// user := ctx.Value("user").(db.CreateUserRow)
 
 	// verify the code
-	if _, err := s.VerifyTokenGenerated(ctx, code); err != nil {
+	otpCode, err := s.VerifyTokenGenerated(ctx, code)
+	if err != nil {
 		s.Logger.Error("[s.VerifyTokenGenerated:] %v", err)
 		return err
 	}
+
+	user, err := s.Store.GetUser(ctx, otpCode.UserID)
+	if err != nil {
+		s.Logger.Error("[s.Store.GetUser:] %v", err)
+		return errors.New("user not found")
+	}
+
+	// check if user is already verified
+	if s.isUserVerified(ctx, otpCode.UserID) {
+		return errors.New("user already verified")
+	}
+
 	// update user
-	updateUserPayload := db.UpdateUserParams{
+	updateUserPayload := db.UpdateUserVerifiedParams{
 		ID:         user.ID,
 		IsVerified: pgtype.Bool{Bool: true, Valid: true},
 	}
 
-	_, err := s.Store.UpdateUser(ctx, updateUserPayload)
+	_, err = s.Store.UpdateUserVerified(ctx, updateUserPayload)
 	if err != nil {
 		s.Logger.Error("[s.Store.UpdateUser:] %v", err)
-		return errors.New("error updating user password")
+		return errors.New("error verifying user")
 	}
 
 	return nil
@@ -153,17 +192,15 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 }
 
 func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserParams) error {
-	auth := &utils.Auth{}
-
 	// find user by email
-	// TODO: can function be better?
+	// TODO: can this user check be better?
 	user, _ := s.GetUserByEmail(ctx, userParams.Email)
 	if user.Email == userParams.Email {
 		return errors.New("user already exists")
 	}
 
 	// hash the password
-	hash, err := auth.HashPassword(userParams.Password)
+	hash, err := s.Utils.HashPassword(userParams.Password)
 	if err != nil {
 		s.Logger.Error("auth.HashPassword: %v", err)
 		return errors.New("unable to hash password")
@@ -179,7 +216,7 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 		return errors.New("failed to create new user")
 	}
 
-	code, err := s.GetVerificationCode(ctx, createdUser)
+	code, err := s.GetVerificationCode(ctx, dto.RequestVerificationCodePayload{Email: createdUser.Email})
 	if err != nil {
 		s.Logger.Error("s.GetVerificationCode: %v", err)
 		return err
@@ -201,14 +238,12 @@ func (s *AuthService) Register(ctx context.Context, userParams db.CreateUserPara
 
 	// TODO: trigger email to user account
 	emailHandler := email.NewSendEmailHandler(s.Config, s.Logger)
-	emailHandler.SendPasswordToken(code, createdUser.Email)
+	emailHandler.SendOTPEmail(code, createdUser.Email)
 
 	return nil
 }
 
 func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPasswordPayload) error {
-	auth := &utils.Auth{}
-
 	// find user by email
 	user, err := s.GetUserByEmail(ctx, params.Email)
 	if err != nil {
@@ -217,7 +252,7 @@ func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPassw
 	}
 	// Generate token and set the expiry time
 	expiresAt := time.Now().Add(1 * time.Hour).UTC()
-	val, err := auth.GenerateRandomCode(32)
+	val, err := s.Utils.GenerateRandomCode(32)
 	if err != nil {
 		s.Logger.Error("Error [auth.GenerateRandomCode]: %v", err)
 		return errors.New("invalid credentials")
@@ -243,8 +278,6 @@ func (s *AuthService) ForgotPassword(ctx context.Context, params dto.ForgotPassw
 }
 
 func (s *AuthService) ResetPassword(ctx context.Context, params dto.ResetPasswordPayload) error {
-	auth := &utils.Auth{}
-
 	// find user by email
 	user, err := s.GetUserByEmail(ctx, params.Email)
 	if err != nil {
@@ -258,22 +291,18 @@ func (s *AuthService) ResetPassword(ctx context.Context, params dto.ResetPasswor
 	}
 
 	// hash new password
-	newHash, err := auth.HashPassword(params.Password)
+	newHash, err := s.Utils.HashPassword(params.Password)
 	if err != nil {
 		s.Logger.Error("auth.HashPassword: %v", err)
 		return errors.New("error handling password")
 	}
 
-	updateUserPayload := db.UpdateUserParams{
+	updateUserPayload := db.UpdateUserPasswordParams{
 		ID:        user.ID,
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
 		Password:  newHash,
-		Role:      user.Role,
 	}
 
-	_, err = s.Store.UpdateUser(ctx, updateUserPayload)
+	_, err = s.Store.UpdateUserPassword(ctx, updateUserPayload)
 	if err != nil {
 		s.Logger.Error("[s.Store.UpdateUser:] %v", err)
 		return errors.New("error updating user password")

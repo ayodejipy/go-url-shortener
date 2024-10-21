@@ -26,6 +26,8 @@ type Querier interface {
 	GetVerifyCode(ctx context.Context, token string) (VerificationCode, error)
 	UpdateUrlClickCount(ctx context.Context, arg UpdateUrlClickCountParams) (UpdateUrlClickCountRow, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (UpdateUserPasswordRow, error)
+	UpdateUserVerified(ctx context.Context, arg UpdateUserVerifiedParams) (UpdateUserVerifiedRow, error)
 	UpdateVerifyCode(ctx context.Context, arg UpdateVerifyCodeParams) (UpdateVerifyCodeRow, error)
 }
 

@@ -18,11 +18,23 @@ SELECT id, email, first_name, last_name, password, role, created_at, updated_at,
 FROM users 
 ORDER BY id;
 
+-- name: UpdateUserPassword :one
+UPDATE users 
+SET password = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, email, first_name, last_name, role, is_verified, created_at, updated_at, deleted_at;
+
+-- name: UpdateUserVerified :one
+UPDATE users 
+SET is_verified = $2, updated_at = NOW()
+WHERE id = $1
+RETURNING id, email, first_name, last_name, role, is_verified, created_at, updated_at, deleted_at;
+
 -- name: UpdateUser :one
 UPDATE users 
-SET email = $2, first_name = $3, last_name = $4, password = $5, role = $6, is_verified = $7, updated_at = NOW()
+SET email = $2, first_name = $3, last_name = $4, role = $5, is_verified = $6, updated_at = NOW()
 WHERE id = $1
-RETURNING id, email, first_name, last_name, password, role, is_verified, created_at, updated_at, deleted_at;
+RETURNING id, email, first_name, last_name, role, is_verified, created_at, updated_at, deleted_at;
 
 -- name: DeleteUser :exec
 UPDATE users 
