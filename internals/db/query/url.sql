@@ -7,6 +7,10 @@ RETURNING id, original_url, short_code, click_count, is_active, user_id, created
 SELECT * FROM urls 
 WHERE id = $1 LIMIT 1;
 
+-- name: GetUrlByCode :one
+SELECT * FROM urls 
+WHERE short_code = $1 LIMIT 1;
+
 -- name: GetUrls :many
 SELECT * FROM urls ORDER BY id;
 

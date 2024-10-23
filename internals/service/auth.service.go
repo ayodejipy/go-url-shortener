@@ -160,8 +160,6 @@ func (s *AuthService) VerifyUser(ctx context.Context, code string) error {
 }
 
 func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (string, error) {
-	auth := &utils.Auth{}
-
 	// find user by email
 	user, err := s.GetUserByEmail(ctx, params.Email)
 	if err != nil {
@@ -170,7 +168,7 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 	}
 
 	// compare whether password is correct
-	err = auth.ComparePassword(user.Password, params.Password)
+	err = s.Utils.ComparePassword(user.Password, params.Password)
 	if err != nil {
 		s.Logger.Error("auth.ComparePassword: %v", err)
 		return "", errors.New("credentials mismatch")
@@ -182,7 +180,7 @@ func (s *AuthService) Login(ctx context.Context, params dto.LoginPayload) (strin
 		Role:  user.Role,
 	}
 
-	token, err := auth.GenerateToken(payload, s.Config.JwtSecret)
+	token, err := s.Utils.GenerateToken(payload, s.Config.JwtSecret)
 	if err != nil {
 		s.Logger.Error("auth.GenerateToken: %v", err)
 		return "", errors.New("token generation failed")

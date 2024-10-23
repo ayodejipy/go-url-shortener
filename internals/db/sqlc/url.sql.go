@@ -77,6 +77,27 @@ func (q *Queries) GetUrl(ctx context.Context, id pgtype.UUID) (Url, error) {
 	return i, err
 }
 
+const getUrlByCode = `-- name: GetUrlByCode :one
+SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at FROM urls 
+WHERE short_code = $1 LIMIT 1
+`
+
+func (q *Queries) GetUrlByCode(ctx context.Context, shortCode string) (Url, error) {
+	row := q.db.QueryRow(ctx, getUrlByCode, shortCode)
+	var i Url
+	err := row.Scan(
+		&i.ID,
+		&i.OriginalUrl,
+		&i.ShortCode,
+		&i.ClickCount,
+		&i.IsActive,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUrls = `-- name: GetUrls :many
 SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at FROM urls ORDER BY id
 `

@@ -19,6 +19,7 @@ type Querier interface {
 	DeleteUser(ctx context.Context, arg DeleteUserParams) error
 	DeleteVerifyCode(ctx context.Context, id pgtype.UUID) error
 	GetUrl(ctx context.Context, id pgtype.UUID) (Url, error)
+	GetUrlByCode(ctx context.Context, shortCode string) (Url, error)
 	GetUrls(ctx context.Context) ([]Url, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
