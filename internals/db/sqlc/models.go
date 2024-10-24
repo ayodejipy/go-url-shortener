@@ -17,6 +17,7 @@ type Url struct {
 	UserID      pgtype.UUID      `json:"user_id"`
 	CreatedAt   pgtype.Timestamp `json:"created_at"`
 	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
+	ExpiryAt    pgtype.Timestamp `json:"expiry_at"`
 }
 
 type User struct {

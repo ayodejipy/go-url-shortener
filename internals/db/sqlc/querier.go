@@ -11,7 +11,7 @@ import (
 )
 
 type Querier interface {
-	CreateUrl(ctx context.Context, arg CreateUrlParams) (Url, error)
+	CreateUrl(ctx context.Context, arg CreateUrlParams) (CreateUrlRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error)
 	CreateVerifyCode(ctx context.Context, arg CreateVerifyCodeParams) (CreateVerifyCodeRow, error)
 	DeleteExpiredCodes(ctx context.Context) error
@@ -21,6 +21,7 @@ type Querier interface {
 	GetUrl(ctx context.Context, id pgtype.UUID) (Url, error)
 	GetUrlByCode(ctx context.Context, shortCode string) (Url, error)
 	GetUrls(ctx context.Context) ([]Url, error)
+	GetUrlsByUser(ctx context.Context, userID pgtype.UUID) ([]Url, error)
 	GetUser(ctx context.Context, id pgtype.UUID) (GetUserRow, error)
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUsers(ctx context.Context) ([]GetUsersRow, error)

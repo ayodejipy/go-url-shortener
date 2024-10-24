@@ -23,9 +23,20 @@ type CreateUrlParams struct {
 	UserID      pgtype.UUID `json:"user_id"`
 }
 
-func (q *Queries) CreateUrl(ctx context.Context, arg CreateUrlParams) (Url, error) {
+type CreateUrlRow struct {
+	ID          pgtype.UUID      `json:"id"`
+	OriginalUrl string           `json:"original_url"`
+	ShortCode   string           `json:"short_code"`
+	ClickCount  pgtype.Int4      `json:"click_count"`
+	IsActive    pgtype.Bool      `json:"is_active"`
+	UserID      pgtype.UUID      `json:"user_id"`
+	CreatedAt   pgtype.Timestamp `json:"created_at"`
+	UpdatedAt   pgtype.Timestamp `json:"updated_at"`
+}
+
+func (q *Queries) CreateUrl(ctx context.Context, arg CreateUrlParams) (CreateUrlRow, error) {
 	row := q.db.QueryRow(ctx, createUrl, arg.OriginalUrl, arg.ShortCode, arg.UserID)
-	var i Url
+	var i CreateUrlRow
 	err := row.Scan(
 		&i.ID,
 		&i.OriginalUrl,
@@ -49,7 +60,7 @@ func (q *Queries) DeleteUrl(ctx context.Context, id pgtype.UUID) error {
 }
 
 const getUrl = `-- name: GetUrl :one
-SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at FROM urls 
+SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at, expiry_at FROM urls 
 WHERE id = $1 LIMIT 1
 `
 
@@ -65,12 +76,13 @@ func (q *Queries) GetUrl(ctx context.Context, id pgtype.UUID) (Url, error) {
 		&i.UserID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ExpiryAt,
 	)
 	return i, err
 }
 
 const getUrlByCode = `-- name: GetUrlByCode :one
-SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at FROM urls 
+SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at, expiry_at FROM urls 
 WHERE short_code = $1 LIMIT 1
 `
 
@@ -86,12 +98,13 @@ func (q *Queries) GetUrlByCode(ctx context.Context, shortCode string) (Url, erro
 		&i.UserID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ExpiryAt,
 	)
 	return i, err
 }
 
 const getUrls = `-- name: GetUrls :many
-SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at FROM urls ORDER BY id
+SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at, expiry_at FROM urls ORDER BY id
 `
 
 func (q *Queries) GetUrls(ctx context.Context) ([]Url, error) {
@@ -112,6 +125,42 @@ func (q *Queries) GetUrls(ctx context.Context) ([]Url, error) {
 			&i.UserID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ExpiryAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUrlsByUser = `-- name: GetUrlsByUser :many
+SELECT id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at, expiry_at FROM urls 
+WHERE user_id = $1
+`
+
+func (q *Queries) GetUrlsByUser(ctx context.Context, userID pgtype.UUID) ([]Url, error) {
+	rows, err := q.db.Query(ctx, getUrlsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Url
+	for rows.Next() {
+		var i Url
+		if err := rows.Scan(
+			&i.ID,
+			&i.OriginalUrl,
+			&i.ShortCode,
+			&i.ClickCount,
+			&i.IsActive,
+			&i.UserID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ExpiryAt,
 		); err != nil {
 			return nil, err
 		}

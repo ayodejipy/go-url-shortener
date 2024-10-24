@@ -11,6 +11,10 @@ WHERE id = $1 LIMIT 1;
 SELECT * FROM urls 
 WHERE short_code = $1 LIMIT 1;
 
+-- name: GetUrlsByUser :many
+SELECT * FROM urls 
+WHERE user_id = $1;
+
 -- name: GetUrls :many
 SELECT * FROM urls ORDER BY id;
 

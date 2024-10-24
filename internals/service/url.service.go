@@ -8,6 +8,7 @@ import (
 	db "rest/api/internals/db/sqlc"
 	"rest/api/internals/dto"
 	"rest/api/internals/logger"
+	"rest/api/internals/middleware"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -33,23 +34,46 @@ func (s *UrlService) GetUrlByShortCode(ctx context.Context, shortCode string) (d
 	record, err := s.Store.GetUrlByCode(ctx, shortCode)
 	if err != nil {
 		s.Logger.Error("[s.Store.GetUrlByCode:] %v", err)
-		return db.Url{}, errors.New("invalid shortCode")
+		return db.Url{}, errors.New("invalid url shortCode")
 	}
 
 	return record, nil
 }
 
-func (s *UrlService) ShortenLongUrl(ctx context.Context, payload dto.CreateShortPayload) error {
-	user := ctx.Value(UserKey).(db.GetUserRow)
+func (s *UrlService) GetUrlsByUser(ctx context.Context) ([]db.Url, error) {
+	user := ctx.Value(middleware.UserKey).(db.GetUserRow)
+
+	record, err := s.Store.GetUrlsByUser(ctx, user.ID)
+	if err != nil {
+		s.Logger.Error("[s.Store.GetUrlsByUser:] %v", err)
+		return []db.Url{}, errors.New("missing user")
+	}
+
+	return record, nil
+}
+
+func (s *UrlService) ShortenLongUrl(ctx context.Context, payload dto.CreateShortPayload) (db.CreateUrlRow, error) {
+	user := ctx.Value(middleware.UserKey).(db.GetUserRow)
+
+	if payload.OriginalUrl == "" {
+		return db.CreateUrlRow{}, errors.New("url field is required")
+	}
+
 	shortCode := s.generateShortCode(payload.OriginalUrl)
 
 	createUrlPayload := db.CreateUrlParams{
 		OriginalUrl: payload.OriginalUrl,
-		ShortCode: shortCode,
-		UserID: user.ID,
+		ShortCode:   shortCode,
+		UserID:      user.ID,
 	}
 
-	return nil
+	createdUrl, err := s.Store.CreateUrl(ctx, createUrlPayload)
+	if err != nil {
+		s.Logger.Error("[s.Store.CreateUrl]: %v", err)
+		return db.CreateUrlRow{}, errors.New("unable to shorten url")
+	}
+
+	return createdUrl, nil
 }
 
 func (s *UrlService) UpdateUrl(ctx context.Context) error {
