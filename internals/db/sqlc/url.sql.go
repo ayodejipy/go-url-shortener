@@ -12,27 +12,19 @@ import (
 )
 
 const createUrl = `-- name: CreateUrl :one
-INSERT INTO urls (original_url, short_code, click_count, is_active, user_id, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+INSERT INTO urls (original_url, short_code, user_id, created_at, updated_at)
+VALUES ($1, $2, $3, NOW(), NOW())
 RETURNING id, original_url, short_code, click_count, is_active, user_id, created_at, updated_at
 `
 
 type CreateUrlParams struct {
 	OriginalUrl string      `json:"original_url"`
 	ShortCode   string      `json:"short_code"`
-	ClickCount  pgtype.Int4 `json:"click_count"`
-	IsActive    pgtype.Bool `json:"is_active"`
 	UserID      pgtype.UUID `json:"user_id"`
 }
 
 func (q *Queries) CreateUrl(ctx context.Context, arg CreateUrlParams) (Url, error) {
-	row := q.db.QueryRow(ctx, createUrl,
-		arg.OriginalUrl,
-		arg.ShortCode,
-		arg.ClickCount,
-		arg.IsActive,
-		arg.UserID,
-	)
+	row := q.db.QueryRow(ctx, createUrl, arg.OriginalUrl, arg.ShortCode, arg.UserID)
 	var i Url
 	err := row.Scan(
 		&i.ID,
@@ -129,6 +121,43 @@ func (q *Queries) GetUrls(ctx context.Context) ([]Url, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUrlActive = `-- name: UpdateUrlActive :one
+UPDATE urls 
+SET is_active = $2
+WHERE id = $1
+RETURNING id, original_url, short_code, click_count, is_active, user_id, created_at
+`
+
+type UpdateUrlActiveParams struct {
+	ID       pgtype.UUID `json:"id"`
+	IsActive pgtype.Bool `json:"is_active"`
+}
+
+type UpdateUrlActiveRow struct {
+	ID          pgtype.UUID      `json:"id"`
+	OriginalUrl string           `json:"original_url"`
+	ShortCode   string           `json:"short_code"`
+	ClickCount  pgtype.Int4      `json:"click_count"`
+	IsActive    pgtype.Bool      `json:"is_active"`
+	UserID      pgtype.UUID      `json:"user_id"`
+	CreatedAt   pgtype.Timestamp `json:"created_at"`
+}
+
+func (q *Queries) UpdateUrlActive(ctx context.Context, arg UpdateUrlActiveParams) (UpdateUrlActiveRow, error) {
+	row := q.db.QueryRow(ctx, updateUrlActive, arg.ID, arg.IsActive)
+	var i UpdateUrlActiveRow
+	err := row.Scan(
+		&i.ID,
+		&i.OriginalUrl,
+		&i.ShortCode,
+		&i.ClickCount,
+		&i.IsActive,
+		&i.UserID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const updateUrlClickCount = `-- name: UpdateUrlClickCount :one

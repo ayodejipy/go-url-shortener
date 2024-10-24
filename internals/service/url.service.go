@@ -40,14 +40,13 @@ func (s *UrlService) GetUrlByShortCode(ctx context.Context, shortCode string) (d
 }
 
 func (s *UrlService) ShortenLongUrl(ctx context.Context, payload dto.CreateShortPayload) error {
+	user := ctx.Value(UserKey).(db.GetUserRow)
 	shortCode := s.generateShortCode(payload.OriginalUrl)
 
 	createUrlPayload := db.CreateUrlParams{
 		OriginalUrl: payload.OriginalUrl,
 		ShortCode: shortCode,
-		ClickCount: 0,
-		IsActive: true,
-		UserID: userID,
+		UserID: user.ID,
 	}
 
 	return nil

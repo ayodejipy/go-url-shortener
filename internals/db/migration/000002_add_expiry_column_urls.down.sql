@@ -1,0 +1,2 @@
+ALTER TABLE urls
+DROP COLUMN IF EXISTS expiry_at;

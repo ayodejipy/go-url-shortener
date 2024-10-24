@@ -25,6 +25,7 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error)
 	GetUsers(ctx context.Context) ([]GetUsersRow, error)
 	GetVerifyCode(ctx context.Context, token string) (VerificationCode, error)
+	UpdateUrlActive(ctx context.Context, arg UpdateUrlActiveParams) (UpdateUrlActiveRow, error)
 	UpdateUrlClickCount(ctx context.Context, arg UpdateUrlClickCountParams) (UpdateUrlClickCountRow, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (UpdateUserPasswordRow, error)

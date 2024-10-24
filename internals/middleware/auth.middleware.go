@@ -29,9 +29,9 @@ func NewMiddleware(params Middleware) *Middleware {
 	}
 }
 
-type contextKey string
+type ContextKey string
 
-const userKey contextKey = "user"
+const UserKey ContextKey = "user"
 
 // a chi middleware
 func (m *Middleware) AuthorizeUser() func(http.Handler) http.Handler {
@@ -69,7 +69,7 @@ func (m *Middleware) AuthorizeUser() func(http.Handler) http.Handler {
 					return
 				}
 				// add the user object to the request context
-				ctx := context.WithValue(r.Context(), userKey, user)
+				ctx := context.WithValue(r.Context(), UserKey, user)
 				
 				next.ServeHTTP(w, r.WithContext(ctx))
 			} else {
