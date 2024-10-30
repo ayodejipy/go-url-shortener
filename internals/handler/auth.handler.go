@@ -73,7 +73,7 @@ func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SuccessMessage(w, utils.Response{
+	utils.SuccessMessage(w, http.StatusCreated, utils.Response{
 		Message: "User created successfully. Please verify your email next",
 	})
 }
@@ -93,7 +93,7 @@ func (h *AuthHandler) verifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SuccessMessage(w, utils.Response{
+	utils.SuccessMessage(w, http.StatusOK, utils.Response{
 		Message: "Email verified successfully.",
 	})
 }
@@ -110,17 +110,17 @@ func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
 	// send the body to the service
 	token, err := h.svc.Login(r.Context(), req)
 	if err != nil {
-		utils.InternalError(w, err)
+		utils.BadRequestError(w, err)
 		return
 	}
 
 	// set cookie
 	if err = h.svc.SetAuthCookie(w, token); err != nil {
-		utils.BadRequestError(w, err)
+		utils.InternalError(w, err)
 		return
 	}
 
-	utils.SuccessMessage(w, utils.Response{
+	utils.SuccessMessage(w, http.StatusOK, utils.Response{
 		Message: "User logged in successfully",
 		Data: map[string]string{
 			"accessToken": token,
@@ -144,7 +144,7 @@ func (h *AuthHandler) forgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SuccessMessage(w, utils.Response{
+	utils.SuccessMessage(w, http.StatusOK, utils.Response{
 		Message: "Password reset email sent",
 		Data:    map[string]string{},
 	})
@@ -164,7 +164,7 @@ func (h *AuthHandler) resetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SuccessMessage(w, utils.Response{
+	utils.SuccessMessage(w, http.StatusOK, utils.Response{
 		Message: "Password reset succesfully.",
 		Data:    map[string]string{},
 	})
@@ -190,7 +190,7 @@ func (h *AuthHandler) resendCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SuccessMessage(w, utils.Response{
+	utils.SuccessMessage(w, http.StatusOK, utils.Response{
 		Message: "Email verification code sent successfully.",
 	})
 }

@@ -33,8 +33,8 @@ func WriteMessage(w http.ResponseWriter, code int, payload Response) error {
 	return nil
 }
 
-func SuccessMessage(w http.ResponseWriter, payload Response) {
-	WriteMessage(w, http.StatusOK, Response{
+func SuccessMessage(w http.ResponseWriter, statusCode int, payload Response) {
+	WriteMessage(w, statusCode, Response{
 		Success: true,
 		Message: payload.Message,
 		Data:    payload.Data,

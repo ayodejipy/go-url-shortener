@@ -25,7 +25,7 @@ func NewPingHandler(store db.Store) *PingHandler {
 
 // load routes
 func (h *PingHandler) LoadPingRoute(router chi.Router) {
-	router.Get("/ping", h.PingServer)
+	router.Get("/", h.PingServer)
 }
 
 // implement route functions

@@ -129,3 +129,25 @@ func (s *SendEmailHandler) SendPasswordResetMail(to string) error {
 
 	return nil
 }
+
+func (s *SendEmailHandler) SendNewUrlMail(to string) error {
+	message := `{
+		"from":{"email":"hello@example.com"},
+		"to":[{"email":"{recepient}"}],
+		"subject":"New URL Alert",
+		"text":"Hi, you just shorten your url using our service.",
+		"category":"Integration Test"
+	}`
+
+	message = strings.Replace(message, "{recepient}", to, 1)
+
+	err := s.sendEmail([]string{to}, message)
+
+	if err != nil {
+		s.Logger.Error("[SendNewUrlMail]: %v", err)
+		log.Fatal(err)
+		return nil
+	}
+
+	return nil
+}

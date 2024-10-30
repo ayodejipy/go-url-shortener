@@ -36,10 +36,12 @@ func SetupRoutes(s *Server) {
 	// register handlers
 	pHandler := handler.NewPingHandler(s.store)
 	authHandler := handler.NewAuthHandler(s.store, s.config, s.logger, middlewareHandler, emailHandler)
+	urlHandler := handler.NewUrlHandler(s.store, s.config, s.logger, middlewareHandler)
 
 	// Group routes
-	router.Route("/", pHandler.LoadPingRoute)
+	router.Route("/ping", pHandler.LoadPingRoute)
 	router.Route("/auth", authHandler.LoadAuthRoutes)
+	router.Route("/", urlHandler.LoadUrlRoutes)
 
 	// Private Routes
 	// Require Authentication

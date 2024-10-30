@@ -10,6 +10,7 @@ import (
 	"rest/api/internals/logger"
 	"rest/api/internals/middleware"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -52,7 +53,7 @@ func (s *UrlService) GetUrlsByUser(ctx context.Context) ([]db.Url, error) {
 	return record, nil
 }
 
-func (s *UrlService) ShortenLongUrl(ctx context.Context, payload dto.CreateShortPayload) (db.CreateUrlRow, error) {
+func (s *UrlService) ShortenLongUrl(ctx context.Context, payload dto.CreateShortUrlPayload) (db.CreateUrlRow, error) {
 	user := ctx.Value(middleware.UserKey).(db.GetUserRow)
 
 	if payload.OriginalUrl == "" {
@@ -80,8 +81,18 @@ func (s *UrlService) UpdateUrl(ctx context.Context) error {
 	return nil
 }
 
-func (s *UrlService) DeleteUrl(ctx context.Context, id pgtype.UUID) error {
-	err := s.Store.DeleteUrl(ctx, id)
+func (s *UrlService) DeleteUrl(ctx context.Context, urlId string) error {
+	parsedUUID, err := uuid.Parse(urlId)
+	if err != nil {
+		s.Logger.Error("[uuid.Parse:] %v", err)
+		return errors.New("invalid ID format")
+	}
+
+	id := pgtype.UUID{
+		Bytes: parsedUUID,
+		Valid: true,
+	}
+	err = s.Store.DeleteUrl(ctx, id)
 	if err != nil {
 		s.Logger.Error("[s.Store.DeleteUrl:] %v", err)
 		return errors.New("invalid ID")
