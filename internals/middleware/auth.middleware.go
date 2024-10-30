@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -42,7 +43,7 @@ func (m *Middleware) AuthorizeUser() func(http.Handler) http.Handler {
 			token, err := r.Cookie("Authorization")
 			if err != nil {
 				m.Logger.Error("reading token from cookie: %v", err)
-				utils.ErrorMessage(w, http.StatusUnauthorized, errors.New("user not authorized"))
+				utils.ErrorMessage(w, http.StatusUnauthorized, errors.New("unauthorized user"))
 				return
 			}
 
@@ -61,16 +62,26 @@ func (m *Middleware) AuthorizeUser() func(http.Handler) http.Handler {
 					utils.ErrorMessage(w, http.StatusUnauthorized, errors.New("jwt expired"))
 					return
 				}
-				// fetch the user with the ID
-				user, err := m.Store.GetUser(r.Context(), claims["user_id"].(pgtype.UUID))
+				// fetch the user with the ID 
+				parsedUUID, _ := uuid.Parse(claims["user_id"].(string))
+				// if err != nil {
+				// 	m.Logger.Error("[uuid.Parse:] %v", err)
+				// 	return errors.New("invalid ID format")
+				// }
+
+				user, err := m.Store.GetUser(r.Context(), pgtype.UUID{
+					Bytes: parsedUUID,
+					Valid: true,
+				})
 				if err != nil {
 					m.Logger.Error("fetching user: %v", err)
 					utils.InternalError(w, errors.New("something went wrong"))
 					return
 				}
+				
 				// add the user object to the request context
 				ctx := context.WithValue(r.Context(), UserKey, user)
-				
+
 				next.ServeHTTP(w, r.WithContext(ctx))
 			} else {
 				m.Logger.Error("decodedToken claims failed")
