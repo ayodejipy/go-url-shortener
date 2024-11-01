@@ -36,7 +36,8 @@ func (h *UrlHandler) LoadUrlRoutes(router chi.Router) {
 	router.Group(func(r chi.Router) {
 		r.Use(h.mw.AuthorizeUser())
 
-		r.Post("/shorten", h.ShortenUrl)
+		// r.Get("/urls", h.GetUrlsByUser)
+		r.Post("/cut", h.ShortenUrl)
 		r.Get("/{shortCode}", h.GetUrlByCodeAndRedirect)
 		r.Delete("/{id}", h.DeleteUrlByCode)
 	})
@@ -52,15 +53,14 @@ func (h *UrlHandler) ShortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shortenedUrl, err := h.svc.ShortenLongUrl(r.Context(), body)
+	_, err := h.svc.ShortenLongUrl(r.Context(), body)
 	if err != nil {
 		utils.ErrorMessage(w, http.StatusBadRequest, err)
 		return
 	}
 
 	utils.SuccessMessage(w, http.StatusCreated, utils.Response{
-		Message: "Url shortened successfully...",
-		Data: shortenedUrl,
+		Message: "Url shortened successfully.",
 	})
 }
 

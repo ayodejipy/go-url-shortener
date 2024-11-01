@@ -5,3 +5,4 @@ urlshortener-data
 
 # environment
 .env
+.air.toml
